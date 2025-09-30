@@ -9,3 +9,5 @@ Project for SOEN343
 |     Mohamed Mahmoud        |     40283160     |      Backend      |
 |     James Bautista         |     40272010     |      Frontend     |
 |     Ramiro Juarez          |     40284034     |      Backend      |
+
+Start local development server with: npx expo start --tunnel

@@ -6,6 +6,8 @@ export default function RootLayout() {
     <>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="other_pages/login" options={{ headerShown: false }} />
+        <Stack.Screen name="other_pages/signup" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="dark" />
     </>

@@ -1,25 +1,10 @@
-import { useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
-import LogIn from '../other_pages/login';
-import SignUp from '../other_pages/signup';
-
+import { Text, View, StyleSheet } from 'react-native';
 
 export default function ProfileScreen() {
-
-  const user = null; // Replace with actual auth state
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
-
-  if (!user) {
-    if (authMode === 'login') {
-      return <LogIn switchToSignUp={() => setAuthMode('signup')} />;
-    } else {
-      return <SignUp switchToLogIn={() => setAuthMode('login')} />;
-    }
-  }
-  
-
   return (
-    <Text> Welcome to your profile! </Text>
+    <View style={styles.container}>
+      <Text style={styles.text}>Profile screen</Text>
+    </View>
   );
 }
 

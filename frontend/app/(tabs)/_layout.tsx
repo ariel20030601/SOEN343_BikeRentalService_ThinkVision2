@@ -50,6 +50,20 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="login"
+        options={{
+          href: null, 
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="signup"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
     </Tabs>
   );
 }

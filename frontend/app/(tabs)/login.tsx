@@ -1,15 +1,9 @@
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Button, StyleSheet, TextInput, View } from 'react-native';
 
 
-type LogInProps = {
-  switchToSignUp: () => void;
-};
-
-export default function LogIn({ switchToSignUp }: LogInProps) {
-
-    const router = useRouter();
+export default function LogIn() {
 
             const styles = StyleSheet.create({
                         container: {
@@ -33,6 +27,7 @@ export default function LogIn({ switchToSignUp }: LogInProps) {
                             width: '100%',
                             maxWidth: 400,
                             marginTop: 12,
+                            backgroundColor: 'rgb(241, 90, 41)',
                         },
                     });
             const [username, setUsername] = useState('');
@@ -62,7 +57,7 @@ export default function LogIn({ switchToSignUp }: LogInProps) {
                     <Button  title="Log In" onPress={handleSubmit} />
                 </View>
                 <View style={{marginTop: 20}}>
-                    <Button title="Don't have an account? Sign Up" onPress={(switchToSignUp)} />
+                    <Button title="Don't have an account? Sign Up" onPress={() => router.push('../signup')} />
                 </View>
             </View>
         )

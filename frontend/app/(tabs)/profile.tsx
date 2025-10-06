@@ -1,21 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { router } from 'expo-router';
 import { StyleSheet, Text } from 'react-native';
-import LogIn from '../other_pages/login';
-import SignUp from '../other_pages/signup';
 
 
 export default function ProfileScreen() {
 
-  const user = null; // Replace with actual auth state
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const user = null; // Replace with authentication later
 
-  if (!user) {
-    if (authMode === 'login') {
-      return <LogIn switchToSignUp={() => setAuthMode('signup')} />;
-    } else {
-      return <SignUp switchToLogIn={() => setAuthMode('login')} />;
+  useEffect(() => {
+    if (!user) {
+      router.replace('/(tabs)/login'); 
     }
-  }
+  }, [user]);
   
 
   return (

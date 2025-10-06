@@ -16,14 +16,16 @@ public class MainController {
     private PasswordEncoder passwordEncoder;
 
     @PostMapping(path = "/add")
-    public @ResponseBody String addNewUser(@RequestParam String name,
+    public @ResponseBody String addNewUser(@RequestParam String first_name,
+                                           @RequestParam String last_name,
                                            @RequestParam String email,
                                            @RequestParam String username,
                                            @RequestParam String password
     ) {
 
         User n = new User();
-        n.setName(name);
+        n.setFirstName(first_name);
+        n.setLastName(last_name);
         n.setEmail(email);
         n.setUsername(username);
         n.setPasswordHash(passwordEncoder.encode(password));

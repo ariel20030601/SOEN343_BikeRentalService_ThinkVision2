@@ -5,7 +5,7 @@ spring:
     password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
   flyway:
-    enabled: false
+    enabled: true
 
   jpa:
     hibernate:
@@ -13,4 +13,5 @@ spring:
     show-sql: true
     properties:
       hibernate:
+        ddl-auto: validate
         dialect: org.hibernate.dialect.MySQL8Dialect

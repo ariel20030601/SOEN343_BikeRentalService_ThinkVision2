@@ -39,6 +39,7 @@ export default function SignUp() {
         const [firstName, setFirstName] = useState('');
         const [lastName, setLastName] = useState('');
         const [address, setAddress] = useState('');    
+        const [Emailerror, setEmailError] = useState('');
         const [error, setError] = useState('');   
 
         const handleSubmit = () => {
@@ -65,19 +66,33 @@ export default function SignUp() {
             </Modal>
             )}
             <TextInput
-                    placeholder="Enter email"
-                    value={email}
+                    placeholder="Enter username"
+                    value={username}
                     onChangeText={(text) => {
-                        setEmail(text);
-                        if (!validator.isEmail(text)) {
-                            setError('Invalid email');
+                        setUsername(text);
+                        if (text == ('Nasib')) {
+                            setError('Username already taken');
                             } else {
-                            setError('');
+                            setError('Username is available');
                         }
                     }}
                     style={styles.TextInput}>
             </TextInput>
             {error ? <Text style={{ color: 'red' }}>{error}</Text> : null}
+            <TextInput
+                    placeholder="Enter email"
+                    value={email}
+                    onChangeText={(text) => {
+                        setEmail(text);
+                        if (!validator.isEmail(text)) {
+                            setEmailError('Invalid email');
+                            } else {
+                            setEmailError('');
+                        }
+                    }}
+                    style={styles.TextInput}>
+            </TextInput>
+            {Emailerror ? <Text style={{ color: 'red' }}>{Emailerror}</Text> : null}
 
             <TextInput
                     placeholder="Enter first name"
@@ -95,7 +110,7 @@ export default function SignUp() {
 
             <TextInput
                     placeholder="Enter your address"
-                    value={username}
+                    value={address}
                     onChangeText={setAddress}
                     style={styles.TextInput}>
             </TextInput>
@@ -107,7 +122,7 @@ export default function SignUp() {
                     style={styles.TextInput}>
             </TextInput>
             <View style={styles.buttonContainer}>
-                <Button title="Log In" onPress={handleSubmit} />
+                <Button title="SignUp" onPress={handleSubmit} />
             </View>
             <View style={styles.buttonContainer}>
                 <Button title="Credit Card Info" onPress={() => setModalVisible(true)} />

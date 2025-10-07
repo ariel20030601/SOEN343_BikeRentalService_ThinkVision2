@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { router } from 'expo-router';
-import { Button, StyleSheet, TextInput, View } from 'react-native';
+import { Button, StyleSheet, TextInput, View, Modal, Text } from 'react-native';
+import CreditCardScreen from '../../components/CreditCardScreen';
 
 
 export default function SignUp() {
@@ -30,29 +31,72 @@ export default function SignUp() {
             },
             
         });
+        const validator = require('validator');
+        const [modalVisible, setModalVisible] = useState(false);
         const [email, setEmail] = useState('');
         const [username, setUsername] = useState('');
         const [password, setPassword] = useState('');
+        const [firstName, setFirstName] = useState('');
+        const [lastName, setLastName] = useState('');
+        const [address, setAddress] = useState('');    
+        const [error, setError] = useState('');   
 
         const handleSubmit = () => {
             console.log('Email:', email);
             console.log('Username:', username);
             console.log('Password:', password);
+            console.log('First Name:', firstName);
+            console.log('Last Name:', lastName);
+            console.log('Address:', address);
         };
+
+        const handlePaymentSubmit = () => {
+            setModalVisible(false);
+        };
+
         
         return (
         <View style={styles.container}>
+            {modalVisible && (
+            <Modal visible={modalVisible} animationType="slide" transparent={true}>
+                <CreditCardScreen 
+                    onSubmit={handlePaymentSubmit} 
+                    onCancel={() => setModalVisible(false)} />
+            </Modal>
+            )}
             <TextInput
                     placeholder="Enter email"
                     value={email}
-                    onChangeText={setEmail}
+                    onChangeText={(text) => {
+                        setEmail(text);
+                        if (!validator.isEmail(text)) {
+                            setError('Invalid email');
+                            } else {
+                            setError('');
+                        }
+                    }}
+                    style={styles.TextInput}>
+            </TextInput>
+            {error ? <Text style={{ color: 'red' }}>{error}</Text> : null}
+
+            <TextInput
+                    placeholder="Enter first name"
+                    value={firstName}
+                    onChangeText={setFirstName}
                     style={styles.TextInput}>
             </TextInput>
 
             <TextInput
-                    placeholder="Enter username"
+                    placeholder="Enter last name"
+                    value={lastName}
+                    onChangeText={setLastName}
+                    style={styles.TextInput}>
+            </TextInput>
+
+            <TextInput
+                    placeholder="Enter your address"
                     value={username}
-                    onChangeText={setUsername}
+                    onChangeText={setAddress}
                     style={styles.TextInput}>
             </TextInput>
 
@@ -63,7 +107,10 @@ export default function SignUp() {
                     style={styles.TextInput}>
             </TextInput>
             <View style={styles.buttonContainer}>
-            <Button title="Log In" onPress={handleSubmit} />
+                <Button title="Log In" onPress={handleSubmit} />
+            </View>
+            <View style={styles.buttonContainer}>
+                <Button title="Credit Card Info" onPress={() => setModalVisible(true)} />
             </View>
             <View style={{marginTop: 20}}>
                 <Button title="Already have an account? Log In" onPress={() => router.push('../login')} />

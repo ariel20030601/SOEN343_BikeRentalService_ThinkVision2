@@ -30,6 +30,10 @@ public class User {
 
     private String role;
 
+    public User() {}
+    public User(String username, String password, String role) {
+        this.username = username; this.passwordHash = password; this.role = role;
+    }
 
     public Integer getId() {
         return id;

@@ -9,7 +9,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update   # for quick dev (later switch to validate/Flyway)
+      ddl-auto: validate   # for quick dev (later switch to validate/Flyway)
     show-sql: true
     properties:
       hibernate:

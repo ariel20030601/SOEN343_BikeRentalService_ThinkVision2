@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { router } from 'expo-router';
 import { Button, StyleSheet, TextInput, View, Modal, Text } from 'react-native';
 import CreditCardScreen from '../../components/CreditCardScreen';
+import { register } from '../../api/auth/api';
 
 
 export default function SignUp() {
@@ -49,6 +50,13 @@ export default function SignUp() {
             console.log('First Name:', firstName);
             console.log('Last Name:', lastName);
             console.log('Address:', address);
+            try {
+                const user = register({ username, email, password });
+                // Handle success (e.g., navigate to login or profile)
+            } catch (error) {
+                console.log('Registration error:', error);
+                // Handle error (e.g., show error message)
+            }
         };
 
         const handlePaymentSubmit = () => {

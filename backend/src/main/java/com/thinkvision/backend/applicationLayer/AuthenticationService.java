@@ -1,5 +1,5 @@
 package com.thinkvision.backend.applicationLayer;
-
+import com.thinkvision.backend.applicationLayer.RegisterRequest;
 import com.thinkvision.backend.entity.User;
 import com.thinkvision.backend.repository.UserRepository;
 
@@ -23,8 +23,15 @@ public class AuthenticationService {
         if (userRepository.existsByUsername(req.getUsername())) {
             throw new IllegalArgumentException("Username already exists");
         }
-        String hashed = passwordEncoder.encode(req.getPassword());
-        User user = new User(req.getUsername(), hashed, "ROLE_USER");
+        User user = new User();
+        user.setFirstName(req.getFirstName());
+        user.setLastName(req.getLastName());
+        user.setEmail(req.getEmail());
+        user.setUsername(req.getUsername());
+        user.setPasswordHash(passwordEncoder.encode(req.getPassword()));
+        user.setRole("RIDER");
+        user.setAddress(req.getAddress());
+        user.setPaymentInfo(req.getPaymentInfo());
         userRepository.save(user);
     }
 

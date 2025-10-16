@@ -1,7 +1,7 @@
 // Define the base API URL (adjust as needed)
 const API_URL = "http://localhost:8080/users";
 
-// 1️⃣ Define interfaces for data types
+// 1️Define interfaces for data types
 export interface RegisterData {
     username: string;
     email: string;
@@ -19,13 +19,13 @@ export interface User {
     email: string;
 }
 
-// 2️⃣ Define return types (optional but helpful)
+// Define return types (optional but helpful)
 export interface AuthResponse {
     token: string;
     user: User;
 }
 
-// 3️⃣ Register new user
+// Register new user
 export async function register(data: RegisterData): Promise<User> {
     const response = await fetch(`${API_URL}/register`, {
         method: "POST",
@@ -40,7 +40,7 @@ export async function register(data: RegisterData): Promise<User> {
     return response.json();
 }
 
-// 4️⃣ Login
+// Login
 export async function login(data: LoginData): Promise<AuthResponse> {
     const response = await fetch(`${API_URL}/login`, {
         method: "POST",
@@ -55,7 +55,7 @@ export async function login(data: LoginData): Promise<AuthResponse> {
     return response.json();
 }
 
-// 5️⃣ Logout (if your backend supports token invalidation)
+// Logout
 export async function logout(token: string): Promise<void> {
     await fetch(`${API_URL}/logout`, {
         method: "POST",
@@ -63,7 +63,7 @@ export async function logout(token: string): Promise<void> {
     });
 }
 
-// 6️⃣ Fetch user info from token
+// Fetch user info from token
 export async function fetchUserMe(token: string): Promise<User> {
     const response = await fetch(`${API_URL}/me`, {
         method: "GET",

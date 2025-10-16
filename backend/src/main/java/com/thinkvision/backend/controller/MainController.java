@@ -37,6 +37,7 @@ public class MainController {
             authService.register(req);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
+            System.out.println("WHHAHAHA");
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
@@ -50,25 +51,6 @@ public class MainController {
         } else {
             return ResponseEntity.status(401).body("Invalid username or password");
         }
-    }
-
-    @PostMapping(path = "/add")
-    public @ResponseBody String addNewUser(@RequestParam String first_name,
-                                           @RequestParam String last_name,
-                                           @RequestParam String email,
-                                           @RequestParam String username,
-                                           @RequestParam String password
-    ) {
-
-        User n = new User();
-        n.setFirstName(first_name);
-        n.setLastName(last_name);
-        n.setEmail(email);
-        n.setUsername(username);
-        n.setPasswordHash(passwordEncoder.encode(password));
-        n.setRole("USER");
-        userRepository.save(n);
-        return "Saved";
     }
 
     @GetMapping(path = "/all")

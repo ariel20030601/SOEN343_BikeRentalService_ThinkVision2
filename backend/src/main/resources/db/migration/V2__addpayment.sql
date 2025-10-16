@@ -1,0 +1,2 @@
+ALTER TABLE users ADD COLUMN payment_info VARCHAR(255);
+ALTER TABLE users ADD COLUMN address VARCHAR(255);

@@ -3,9 +3,13 @@ const API_URL = "http://localhost:8080/users";
 
 // 1️Define interfaces for data types
 export interface RegisterData {
-    username: string;
-    email: string;
-    password: string;
+    username: String,
+    email: String,
+    password: String,
+    firstName: String,
+    lastName: String,
+    address: String,
+    paymentInfo: String
 }
 
 export interface LoginData {
@@ -27,7 +31,7 @@ export interface AuthResponse {
 
 // Register new user
 export async function register(data: RegisterData): Promise<User> {
-    const response = await fetch(`${API_URL}/register`, {
+    const response = await fetch(`http://localhost:8080/users/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),

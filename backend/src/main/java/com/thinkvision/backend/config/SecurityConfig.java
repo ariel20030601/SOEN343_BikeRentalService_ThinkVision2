@@ -46,7 +46,7 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(request -> {
                     var cfg = new CorsConfiguration();
-                    cfg.setAllowedOrigins(List.of("http://localhost:8080")); // change to your RN origin(s)
+                    cfg.setAllowedOrigins(List.of("http://localhost:8081"));
                     cfg.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
                     cfg.setAllowedHeaders(List.of("*"));
                     cfg.setAllowCredentials(true);
@@ -54,7 +54,7 @@ public class SecurityConfig {
                 }))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/users/register", "users/login").permitAll()
+                        .requestMatchers("/users/register", "/users/login").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);

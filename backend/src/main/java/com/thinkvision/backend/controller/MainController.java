@@ -36,9 +36,9 @@ public class MainController {
     public ResponseEntity<?> register(@RequestBody RegisterRequest req) {
         try {
             authService.register(req);
-            return ResponseEntity.ok().build();
+            User user = userRepository.findByUsername(req.getUsername()).orElse(null);
+            return ResponseEntity.ok(user);
         } catch (IllegalArgumentException e) {
-            System.out.println("WHHAHAHA");
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }

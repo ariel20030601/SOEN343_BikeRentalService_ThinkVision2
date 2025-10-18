@@ -18,7 +18,7 @@ spring:
 
 app:
   jwt:
-    secret: ReplaceThisWithAStrongRandomStringChangeMe
-    expiration-ms: 3600000
+    secret: QWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTIzNDU2Nzg5MDEyMzQ1Ng==
+    expiration-ms: 86400000
   cors:
     allowed-origins: http://localhost:8080

@@ -39,10 +39,8 @@ export default function LogIn() {
                 console.log('Password:', password);
                 try {
                     const user = login({ username, password });
-                    // Handle success (e.g., navigate to login or profile)
                 } catch (error) {
                     console.log('Login error:', error);
-                    // Handle error (e.g., show error message)
                 }
             };
             

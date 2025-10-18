@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { router } from 'expo-router';
 import { Button, StyleSheet, TextInput, View, Modal, Text } from 'react-native';
 import CreditCardScreen from '../../components/CreditCardScreen';
+import { register } from '../../api/auth/api';
 
 
 export default function SignUp() {
@@ -38,9 +39,16 @@ export default function SignUp() {
         const [password, setPassword] = useState('');
         const [firstName, setFirstName] = useState('');
         const [lastName, setLastName] = useState('');
-        const [address, setAddress] = useState('');    
+        const [address, setAddress] = useState('');
+        const [paymentInfo, setPaymentInfo] = useState<string>('');
+
         const [Emailerror, setEmailError] = useState('');
         const [error, setError] = useState('');   
+
+        const handlePaymentSubmit = (paymentInfo: string) => {
+            setPaymentInfo(paymentInfo)
+            setModalVisible(false);
+        };
 
         const handleSubmit = () => {
             console.log('Email:', email);
@@ -49,20 +57,31 @@ export default function SignUp() {
             console.log('First Name:', firstName);
             console.log('Last Name:', lastName);
             console.log('Address:', address);
+            console.log('Payment Info:', paymentInfo); 
+            try {
+                const user = register({
+                    username,
+                    email,
+                    password,
+                    firstName,
+                    lastName,
+                    address,
+                    paymentInfo
+                });
+            } catch (error) {
+                console.log('Registration error:', error);
+            }
         };
-
-        const handlePaymentSubmit = () => {
-            setModalVisible(false);
-        };
-
-        
+ 
         return (
         <View style={styles.container}>
             {modalVisible && (
             <Modal visible={modalVisible} animationType="slide" transparent={true}>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
                 <CreditCardScreen 
                     onSubmit={handlePaymentSubmit} 
                     onCancel={() => setModalVisible(false)} />
+                </View>
             </Modal>
             )}
             <TextInput

@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Button, StyleSheet, TextInput, View } from 'react-native';
+import {login} from "@/api/auth/api";
 
 
 export default function LogIn() {
@@ -36,6 +37,13 @@ export default function LogIn() {
             const handleSubmit = () => {
                 console.log('Username:', username);
                 console.log('Password:', password);
+                try {
+                    const user = login({ username, password });
+                    // Handle success (e.g., navigate to login or profile)
+                } catch (error) {
+                    console.log('Login error:', error);
+                    // Handle error (e.g., show error message)
+                }
             };
             
             return (

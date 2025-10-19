@@ -68,6 +68,7 @@ export default function SignUp() {
                     address,
                     paymentInfo
                 });
+                router.push('/(tabs)/login');
             } catch (error) {
                 console.log('Registration error:', error);
             }

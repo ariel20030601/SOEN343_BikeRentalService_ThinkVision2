@@ -34,11 +34,12 @@ export default function LogIn() {
             const [username, setUsername] = useState('');
             const [password, setPassword] = useState('');
     
-            const handleSubmit = () => {
+            const handleSubmit = async () => {
                 console.log('Username:', username);
                 console.log('Password:', password);
                 try {
-                    const user = login({ username, password });
+                    const user = await login({ username, password });
+                    router.push('/(tabs)');
                 } catch (error) {
                     console.log('Login error:', error);
                 }

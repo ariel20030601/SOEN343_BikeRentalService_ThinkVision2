@@ -38,13 +38,13 @@ export async function register(data: RegisterData): Promise<User> {
     });
 
     if (!response.ok) {
-        // try to extract a helpful message from body
+        
         let message = `Registration failed (${response.status})`;
         try {
             const text = await response.text();
             if (text) message = text;
         } catch (e) {
-            // ignore
+    
         }
         const err: any = new Error(message);
         err.status = response.status;

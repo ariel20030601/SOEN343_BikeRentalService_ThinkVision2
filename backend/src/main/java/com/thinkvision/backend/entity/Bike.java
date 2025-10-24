@@ -1,29 +1,39 @@
 package com.thinkvision.backend.entity;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import java.time.Instant;
 
 @Entity
 @Table(name = "bikes")
+@Getter
+@Setter
 public class Bike {
-
     @Id
+    @Column(name = "id", length = 50)
     private String id;
 
-    @Column(name = "station_id")
-    private String stationId;
+    @Enumerated(EnumType.STRING)
+    private BikeType type;
 
     @Enumerated(EnumType.STRING)
-    private BikeStatus status = BikeStatus.AVAILABLE;
+    @Column(name = "status", nullable = false)
+    private BikeStatus status;
 
-    @Column(name = "reservation_id")
-    private String reservationId;
+    private Instant reservationExpiry;
+
+    @OneToOne
+    @JoinColumn(name = "dock_id")
+    private Dock dock;
 
     public Bike() {}
+
+    public Bike(String id, BikeStatus status, Dock dock) {
+        this.id = id;
+        this.status = status;
+        this.dock = dock;
+    }
 
     public String getId() {
         return id;
@@ -31,14 +41,6 @@ public class Bike {
 
     public void setId(String id) {
         this.id = id;
-    }
-
-    public String getStationId() {
-        return stationId;
-    }
-
-    public void setStationId(String stationId) {
-        this.stationId = stationId;
     }
 
     public BikeStatus getStatus() {
@@ -49,11 +51,11 @@ public class Bike {
         this.status = status;
     }
 
-    public String getReservationId() {
-        return reservationId;
+    public Dock getDock() {
+        return dock;
     }
 
-    public void setReservationId(String reservationId) {
-        this.reservationId = reservationId;
+    public void setDock(Dock dock) {
+        this.dock = dock;
     }
 }

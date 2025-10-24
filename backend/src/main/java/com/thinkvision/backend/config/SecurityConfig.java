@@ -46,19 +46,28 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(request -> {
                     var cfg = new CorsConfiguration();
-                    cfg.setAllowedOrigins(List.of("http://localhost:8081"));
-                    cfg.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
+                    cfg.setAllowedOrigins(List.of("http://localhost:8081", "http://localhost:8080"));
+                    cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                     cfg.setAllowedHeaders(List.of("*"));
                     cfg.setAllowCredentials(true);
                     return cfg;
                 }))
-        .csrf(csrf -> csrf.disable())
-        .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/users/register", "/users/login", "/users/check-username").permitAll()
-            .anyRequest().authenticated()
-        )
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/users/register",
+                                "/users/login",
+                                "/api/bikes/**",
+                                "/api/bikes/reserve",
+                                "/api/bikes/checkout",
+                                "/api/bikes/return"
+                        ).permitAll()
+                        .anyRequest().authenticated()
+                )
                 .addFilterBefore(jwtFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
+
 }

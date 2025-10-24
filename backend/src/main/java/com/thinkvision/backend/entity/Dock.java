@@ -1,79 +1,41 @@
 package com.thinkvision.backend.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Table;
-import org.springframework.data.annotation.Id;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
-@Table(name = "docks")
 @Entity
+@Table(name = "docks")
+@Getter
+@Setter
 public class Dock {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @jakarta.persistence.Id
-    private Long id;
+    @Column(name = "id")
+    private String id;
 
+    @Column(name = "name", length = 255)
     private String name;
-    private String location; // optional
-    private int capacity;
-    private int availableBikes;
-    private boolean outOfService;
 
-    public Long getId() {
-        return id;
-    }
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 50)
+    private DockStatus status;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "station_id")
+    private Station station;
 
-    public String getName() {
-        return name;
-    }
+    @OneToOne(mappedBy = "dock", fetch = FetchType.LAZY)
+    private Bike bike;
 
-    public void setName(String name) {
+    @Version
+    private Long version; // <-- Add this line
+
+    public Dock() {}
+
+    public Dock(String name, DockStatus status, Station station, Bike bike) {
         this.name = name;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
-    }
-
-    public int getCapacity() {
-        return capacity;
-    }
-
-    public void setCapacity(int capacity) {
-        this.capacity = capacity;
-    }
-
-    public int getAvailableBikes() {
-        return availableBikes;
-    }
-
-    public void setAvailableBikes(int availableBikes) {
-        this.availableBikes = availableBikes;
-    }
-
-    public boolean isOutOfService() {
-        return outOfService;
-    }
-
-    public void setOutOfService(boolean outOfService) {
-        this.outOfService = outOfService;
-    }
-
-
-    public boolean hasFreeSpace() {
-        return availableBikes < capacity;
-    }
-
-    public boolean hasAvailableBikes() {
-        return availableBikes > 0;
+        this.status = status;
+        this.station = station;
+        this.bike = bike;
     }
 }

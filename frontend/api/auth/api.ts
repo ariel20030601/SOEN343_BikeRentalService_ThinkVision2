@@ -31,17 +31,41 @@ export interface AuthResponse {
 
 // Register new user
 export async function register(data: RegisterData): Promise<User> {
-    const response = await fetch(`http://localhost:8080/users/register`, {
+    const response = await fetch(`${API_URL}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
     });
 
     if (!response.ok) {
-        throw new Error("Registration failed");
+        
+        let message = `Registration failed (${response.status})`;
+        try {
+            const text = await response.text();
+            if (text) message = text;
+        } catch (e) {
+    
+        }
+        const err: any = new Error(message);
+        err.status = response.status;
+        throw err;
     }
 
     return response.json();
+}
+
+
+export async function checkUsername(username: string): Promise<boolean> {
+    const url = `${API_URL}/check-username?username=${encodeURIComponent(username)}`;
+    const response = await fetch(url, { method: 'GET' });
+    if (!response.ok) {
+        const errText = await response.text().catch(() => '');
+        const err: any = new Error(errText || `checking`);
+        err.status = response.status;
+        throw err;
+    }
+    const body = await response.json().catch(() => ({ available: false }));
+    return Boolean(body?.available);
 }
 
 // Login

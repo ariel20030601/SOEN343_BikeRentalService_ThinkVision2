@@ -51,6 +51,16 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="bikeReserve"
+        options={{
+          title: 'Bike Reserve',
+          headerShown: false,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'bicycle' : 'bicycle-outline'} color={color} size={24}/>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="login"
         options={{
           href: null, 

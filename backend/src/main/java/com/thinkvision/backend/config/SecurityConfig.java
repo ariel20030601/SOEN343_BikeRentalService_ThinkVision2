@@ -52,11 +52,11 @@ public class SecurityConfig {
                     cfg.setAllowCredentials(true);
                     return cfg;
                 }))
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/users/register", "/users/login").permitAll()
-                        .anyRequest().authenticated()
-                )
+        .csrf(csrf -> csrf.disable())
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/users/register", "/users/login", "/users/check-username").permitAll()
+            .anyRequest().authenticated()
+        )
                 .addFilterBefore(jwtFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

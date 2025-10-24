@@ -1,5 +1,6 @@
 package com.thinkvision.backend.applicationLayer;
 import com.thinkvision.backend.applicationLayer.RegisterRequest;
+import com.thinkvision.backend.applicationLayer.UsernameAlreadyExistsException;
 import com.thinkvision.backend.entity.User;
 import com.thinkvision.backend.repository.UserRepository;
 
@@ -21,7 +22,7 @@ public class AuthenticationService {
     // existsByUsername and findByUsername need to be implemented
     public void register(RegisterRequest req) {
         if (userRepository.existsByUsername(req.getUsername())) {
-            throw new IllegalArgumentException("Username already exists");
+            throw new UsernameAlreadyExistsException("Username already exists");
         }
         User user = new User();
         user.setFirstName(req.getFirstName());

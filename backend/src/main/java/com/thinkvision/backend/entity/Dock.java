@@ -3,12 +3,15 @@ package com.thinkvision.backend.entity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.Table;
 import org.springframework.data.annotation.Id;
 
+@Table(name = "docks")
 @Entity
 public class Dock {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @jakarta.persistence.Id
     private Long id;
 
     private String name;

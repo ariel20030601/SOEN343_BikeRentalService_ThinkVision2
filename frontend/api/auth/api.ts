@@ -56,16 +56,16 @@ export async function register(data: RegisterData): Promise<User> {
 
 
 export async function checkUsername(username: string): Promise<boolean> {
-   
     const url = `${API_URL}/check-username?username=${encodeURIComponent(username)}`;
     const response = await fetch(url, { method: 'GET' });
-    if (response.status === 200) return true;
-    if (response.status === 409) return false;
-    
-    const errText = await response.text().catch(() => '');
-    const err: any = new Error(errText || `Unexpected response ${response.status}`);
-    err.status = response.status;
-    throw err;
+    if (!response.ok) {
+        const errText = await response.text().catch(() => '');
+        const err: any = new Error(errText || `${response.status}`);
+        err.status = response.status;
+        throw err;
+    }
+    const body = await response.json().catch(() => ({ available: false }));
+    return Boolean(body?.available);
 }
 
 // Login

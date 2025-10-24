@@ -34,13 +34,15 @@ public class MainController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest req) {
-        try {
-            authService.register(req);
-            User user = userRepository.findByUsername(req.getUsername()).orElse(null);
-            return ResponseEntity.ok(user);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        authService.register(req);
+        User user = userRepository.findByUsername(req.getUsername()).orElse(null);
+        return ResponseEntity.status(201).body(user);
+    }
+
+    @GetMapping("/check-username")
+    public ResponseEntity<?> checkUsername(@RequestParam String username) {
+        boolean exists = userRepository.existsByUsername(username);
+        return ResponseEntity.ok(java.util.Map.of("available", !exists));
     }
 
     @PostMapping("/login")

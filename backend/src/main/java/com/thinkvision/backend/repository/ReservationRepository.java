@@ -20,5 +20,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, String
 
     // find all active reservations that have expired
     List<Reservation> findByExpiresAtBeforeAndActiveTrue(Instant now);
+    Optional<Reservation> findByBikeIdAndActiveTrue(String bikeId);
 }
 

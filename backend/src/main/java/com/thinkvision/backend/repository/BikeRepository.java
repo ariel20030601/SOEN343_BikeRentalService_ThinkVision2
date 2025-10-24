@@ -6,11 +6,15 @@ import java.util.List;
 import java.util.Optional;
 import com.thinkvision.backend.entity.Bike;
 import com.thinkvision.backend.entity.BikeStatus;
+import java.time.Instant;
+
 
 @Repository
 public interface BikeRepository extends JpaRepository<Bike, String> {
     // Find all bikes at a station
     List<Bike> findByDock_Station_Id(String stationId);
+
+    List<Bike> findAllByStatusAndReservationExpiryBefore(BikeStatus status, Instant time);
 
     // Find available bikes at a station
     List<Bike> findByDock_Station_IdAndStatus(String stationId, BikeStatus status);

@@ -26,7 +26,12 @@ public class ReservationService {
     private EventPublisher eventPublisher;
 
     @Autowired
-    private UserRepository userRepo; // was RiderRepository before
+    private UserRepository userRepo;
+
+    @Autowired
+    private StationService stationService;
+
+    private static final int EXPIRES_AFTER_MINUTES = 5;
 
     public Reservation reserveBike(Integer userId, String stationId, String bikeId) {
         User user = userRepo.findById(userId)
@@ -36,14 +41,12 @@ public class ReservationService {
             throw new IllegalStateException("User already has an active reservation");
         }
 
-        // Find the bike and its dock
         Bike bike = bikeRepo.findById(bikeId)
                 .orElseThrow(() -> new IllegalStateException("Bike not found"));
 
         Dock dock = bike.getDock();
-        if (dock == null) {
+        if (dock == null)
             throw new IllegalStateException("Bike is not currently docked");
-        }
 
         if (dock.getStatus() == DockStatus.OUT_OF_SERVICE)
             throw new IllegalStateException("Dock is out of service");
@@ -53,6 +56,7 @@ public class ReservationService {
 
         // 🔹 Mark reserved
         bike.setStatus(BikeStatus.RESERVED);
+        bike.setReservationExpiry(Instant.now().plusSeconds(EXPIRES_AFTER_MINUTES * 60));
         bikeRepo.save(bike);
 
         // 🔹 Create reservation
@@ -61,7 +65,7 @@ public class ReservationService {
                 bikeId,
                 dock.getStation().getId(),
                 Instant.now(),
-                Instant.now().plusSeconds(5 * 60),
+                bike.getReservationExpiry(),
                 true
         );
         reservationRepo.save(res);
@@ -70,4 +74,38 @@ public class ReservationService {
         return res;
     }
 
+    // 🕒 Scheduled job: run every 60 seconds
+    @Scheduled(fixedRate = 60000)
+    public void expireReservations() {
+        Instant now = Instant.now();
+
+        List<Bike> expiredBikes = bikeRepo.findAllByStatusAndReservationExpiryBefore(
+                BikeStatus.RESERVED, now
+        );
+
+        for (Bike bike : expiredBikes) {
+            // Find associated reservation
+            Reservation res = reservationRepo.findByBikeIdAndActiveTrue(bike.getId()).orElse(null);
+            if (res != null) {
+                res.setActive(false);
+                reservationRepo.save(res);
+            }
+
+            // Free bike + dock
+            bike.setStatus(BikeStatus.AVAILABLE);
+            bike.setReservationExpiry(null);
+            bikeRepo.save(bike);
+
+            String stationId = bike.getDock() != null ? bike.getDock().getStation().getId() : null;
+            if (stationId != null) {
+                stationService.updateOccupancy(stationId);
+            }
+
+            eventPublisher.publish("ReservationExpired", bike.getId());
+        }
+
+        if (!expiredBikes.isEmpty()) {
+            System.out.println("Expired " + expiredBikes.size() + " reservations");
+        }
+    }
 }

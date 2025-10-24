@@ -12,7 +12,7 @@ import java.util.List;
 @Entity
 @Getter
 @Setter
-@Table(name = "stations")
+@Table(name = "stations", schema = "bibixidb")
 public class Station {
     @Id
     private String id;

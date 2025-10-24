@@ -60,7 +60,7 @@ export async function checkUsername(username: string): Promise<boolean> {
     const response = await fetch(url, { method: 'GET' });
     if (!response.ok) {
         const errText = await response.text().catch(() => '');
-        const err: any = new Error(errText || `${response.status}`);
+        const err: any = new Error(errText || `checking`);
         err.status = response.status;
         throw err;
     }

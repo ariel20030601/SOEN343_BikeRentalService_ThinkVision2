@@ -13,9 +13,16 @@ public class BikeController {
     @Autowired
     ReservationService reservationService;
 
+    CheckoutBike checkoutBike;
+
     @PostMapping("/reserve")
     public Reservation reserveBike(@RequestBody ReserveRequest req) {
         return reservationService.reserveBike(req.riderId(), req.stationId(), req.bikeId());
+    }
+
+    @PostMapping("/checkout")
+    public void checkoutBike(@RequestBody CheckoutRequest req) {
+        checkoutBike.checkoutBike(req.riderId(), req.stationId(), req.bikeId());
     }
 
 }

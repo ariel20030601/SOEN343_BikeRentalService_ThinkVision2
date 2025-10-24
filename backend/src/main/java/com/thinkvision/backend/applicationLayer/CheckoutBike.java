@@ -69,6 +69,8 @@ public class CheckoutBike
         trip.setStartTime(Instant.now());
         trip.setActive(true);
         tripRepo.save(trip);
+
+        System.out.println("Trip started");
     }
 
 }

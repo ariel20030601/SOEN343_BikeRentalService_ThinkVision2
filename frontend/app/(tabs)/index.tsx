@@ -1,7 +1,7 @@
 import { View, StyleSheet } from "react-native";
 import MapScreen from "@/components/Map";
 import ImageViewer from '@/components/ImageViewer';
-import Button from '@/components/Button';
+import Button from '@/components/SearchButton';
 
 const PlaceholderImage = require('@/assets/images/bibixi_logo.png');
 

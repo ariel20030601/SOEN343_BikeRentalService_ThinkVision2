@@ -39,17 +39,34 @@ const Item: React.FC<StationData> = ({ title, bikes, ebikes, docks }) => (
 );
 
 const Search = () => {
+    // State to hold the currently displayed/filtered list of stations
     const [data, setData] = React.useState(DATA)
+    
+    // State to track the current search input value
     const [searchValue, setSearchValue] = React.useState("");
+    
+    // useRef to store the original unfiltered data
+    // This persists across re-renders and allows us to always filter from the complete dataset
     const arrayholder = React.useRef(DATA);
 
     const searchFunction = (text: string) => {
+        // Filter the original data array based on the search text
         const updateData = arrayholder.current.filter((item) => {
+            // Convert the station title to uppercase for case-insensitive comparison
             const itemData = item.title.toUpperCase();
+            
+            // Convert the search text to uppercase for case-insensitive comparison
             const textData = text.toUpperCase();
+            
+            // Return true if the station title contains the search text
+            // This keeps the item in the filtered results
             return itemData.includes(textData);
         });
+        
+        // Update the displayed data with the filtered results
         setData(updateData);
+        
+        // Update the search input value to reflect what the user typed
         setSearchValue(text);
     }
 

@@ -1,4 +1,5 @@
 import { StyleSheet, View, Pressable, Text } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 type Props = {
   label: string;
@@ -6,6 +7,11 @@ type Props = {
 };
 
 export default function Button({ label, theme }: Props) {
+  const navigation = useNavigation();
+
+  const handlePress = () => {
+    navigation.navigate('search' as never);
+  }
   if (theme === 'primary') {
     return (
       <View
@@ -15,7 +21,7 @@ export default function Button({ label, theme }: Props) {
         ]}>
         <Pressable
           style={[styles.button, { backgroundColor: '#F15A29' }]}
-          onPress={() => alert('You pressed a button.')}>
+          onPress={handlePress}>
           <Text style={[styles.buttonLabel, { color: '#fff' }]}>{label}</Text>
         </Pressable>
       </View>
@@ -24,7 +30,7 @@ export default function Button({ label, theme }: Props) {
 
   return (
     <View style={styles.buttonContainer}>
-      <Pressable style={styles.button} onPress={() => alert('You pressed a button.')}>
+      <Pressable style={styles.button} onPress={handlePress}>
         <Text style={styles.buttonLabel}>{label}</Text>
       </Pressable>
     </View>

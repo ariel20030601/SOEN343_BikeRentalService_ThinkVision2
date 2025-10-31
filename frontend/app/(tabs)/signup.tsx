@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { router } from 'expo-router';
 import { Button, StyleSheet, TextInput, View, Modal, Text } from 'react-native';
 import CreditCardScreen from '../../components/CreditCardScreen';
-import { register } from '../../api/auth/api';
+import { register, checkUsername } from '../../api/auth/api';
 
 
 export default function SignUp() {
@@ -42,15 +42,16 @@ export default function SignUp() {
         const [address, setAddress] = useState('');
         const [paymentInfo, setPaymentInfo] = useState<string>('');
 
-        const [Emailerror, setEmailError] = useState('');
-        const [error, setError] = useState('');   
+    const [Emailerror, setEmailError] = useState('');
+    const [error, setError] = useState('');
+    const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
 
         const handlePaymentSubmit = (paymentInfo: string) => {
             setPaymentInfo(paymentInfo)
             setModalVisible(false);
         };
 
-        const handleSubmit = () => {
+        const handleSubmit = async () => {
             console.log('Email:', email);
             console.log('Username:', username);
             console.log('Password:', password);
@@ -59,7 +60,7 @@ export default function SignUp() {
             console.log('Address:', address);
             console.log('Payment Info:', paymentInfo); 
             try {
-                const user = register({
+                const user = await register({
                     username,
                     email,
                     password,
@@ -69,8 +70,13 @@ export default function SignUp() {
                     paymentInfo
                 });
                 router.push('/(tabs)/login');
-            } catch (error) {
-                console.log('Registration error:', error);
+            } catch (err: any) {
+                console.log('Registration error:', err);
+                if (err?.status === 409) {
+                    setError('Username already exists');
+                } else {
+                    setError(err?.message || 'Registration failed');
+                }
             }
         };
  
@@ -90,15 +96,24 @@ export default function SignUp() {
                     value={username}
                     onChangeText={(text) => {
                         setUsername(text);
-                        if (text == ('Nasib')) {
-                            setError('Username already taken');
-                            } else {
-                            setError('Username is available');
+                        setUsernameAvailable(null);
+                        setError('');
+                    }}
+                    onBlur={async () => {
+                        if (!username) return;
+                        try {
+                            const available = await checkUsername(username);
+                            setUsernameAvailable(available);
+                            setError(available ? '' : 'Username already taken');
+                        } catch (e: any) {
+                            setError(e?.message || 'Could not verify username');
+                            setUsernameAvailable(null);
                         }
                     }}
                     style={styles.TextInput}>
             </TextInput>
             {error ? <Text style={{ color: 'red' }}>{error}</Text> : null}
+            {usernameAvailable === true ? <Text style={{ color: 'green' }}>Username is available</Text> : null}
             <TextInput
                     placeholder="Enter email"
                     value={email}

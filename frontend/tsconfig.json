@@ -1,19 +1,15 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "baseUrl":".",
-    "target": "es2017",
-    "module": "esnext",
-    "lib": ["es2017", "dom"],
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
     "strict": true,
+    "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"],
+      "@/components/*": ["./components/*"],
+      "@/contexts/*": ["./contexts/*"],
+      "@/api/*": ["./api/*"],
+      "@/assets/*": ["./assets/*"],
+      "@/utils/*": ["./utils/*"]
     }
   },
   "include": [

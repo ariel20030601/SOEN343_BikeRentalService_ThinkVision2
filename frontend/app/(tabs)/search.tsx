@@ -1,20 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View, FlatList} from "react-native";
 import { SearchBar } from "react-native-elements";
-
-interface StationData {
-    id: string;
-    title: string;
-    bikes: string;
-    ebikes: string;
-    docks: string;
-}
-
-const DATA = [
-    {id: "1", title: "Station 1", bikes: "13", ebikes: "0", docks: "10"},
-    {id: "2", title: "Station 2", bikes: "10", ebikes: "5", docks: "11"},
-    {id: "3", title: "Station 3", bikes: "9", ebikes: "0", docks: "5"}
-];
+import { StationData, STATIONS_DATA } from "@/hardcode/stationsData";
 
 const Item: React.FC<StationData> = ({ title, bikes, ebikes, docks }) => (
     <View style={styles.item}>
@@ -40,14 +27,14 @@ const Item: React.FC<StationData> = ({ title, bikes, ebikes, docks }) => (
 
 const Search = () => {
     // State to hold the currently displayed/filtered list of stations
-    const [data, setData] = React.useState(DATA)
+    const [data, setData] = React.useState(STATIONS_DATA)
     
     // State to track the current search input value
     const [searchValue, setSearchValue] = React.useState("");
     
     // useRef to store the original unfiltered data
     // This persists across re-renders and allows us to always filter from the complete dataset
-    const arrayholder = React.useRef(DATA);
+    const arrayholder = React.useRef(STATIONS_DATA);
 
     const searchFunction = (text: string) => {
         // Filter the original data array based on the search text
@@ -84,7 +71,7 @@ const Search = () => {
                 loadingProps={{}}
                 onClear={() => {
                     setSearchValue("");
-                    setData(DATA);
+                    setData(STATIONS_DATA);
                 }}
                 onFocus={() => {}}
                 onBlur={() => {}}

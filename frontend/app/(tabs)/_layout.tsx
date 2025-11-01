@@ -31,32 +31,32 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="qr_scanner"
+        name="pricing"
         options={{
-          title: 'Scan',
+          title: 'Pricing',
           headerShown: false,
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'qr-code-sharp' : 'qr-code-outline'} color={color} size={24}/>
+            <Ionicons name={focused ? "pricetag-sharp" : "pricetag-outline"} color={color} size={24}/>
           ),
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="billing"
         options={{
-          title: 'Profile',
+          title: 'Billing',
           headerShown: false,
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'person-circle-sharp' : 'person-circle-outline'} color={color} size={24}/>
+            <Ionicons name={focused ? 'card-sharp' : 'card-outline'} color={color} size={24}/>
           ),
         }}
       />
       <Tabs.Screen
-        name="bikeReserve"
+        name="history"
         options={{
-          title: 'Bike Reserve',
+          title: 'History',
           headerShown: false,
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'bicycle' : 'bicycle-outline'} color={color} size={24}/>
+            <Ionicons name={focused ? 'receipt-sharp' : 'receipt-outline'} color={color} size={24}/>
           ),
         }}
       />
@@ -76,6 +76,27 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="signup"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="qr_scanner"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="bikeReserve"
         options={{
           href: null,
           headerShown: false,

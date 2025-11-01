@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 
 export default function ProfileScreen() {
@@ -15,18 +15,20 @@ export default function ProfileScreen() {
   
 
   return (
-    <Text> Welcome to your profile! </Text>
+    <View style={styles.container}>
+      <Text style={styles.text}> Welcome to your profile! </Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#25292e',
+    backgroundColor: '#F9F6F1',
     justifyContent: 'center',
     alignItems: 'center',
   },
   text: {
-    color: '#fff',
+    fontSize: 20,
   },
 });

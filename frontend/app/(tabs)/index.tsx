@@ -1,22 +1,26 @@
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Image } from "react-native";
 import MapScreen from "@/components/Map";
-import ImageViewer from '@/components/ImageViewer';
-import Button from '@/components/SearchButton';
+import SearchButton from '@/components/SearchButton'
+import ProfileButton from "@/components/ProfileButton";
 
 const PlaceholderImage = require('@/assets/images/bibixi_logo.png');
 
-
 export default function Index() {
+
+
   return (
     <View style={styles.container}>
-      <View style={styles.imageContainer}>
-        <ImageViewer imgSource={PlaceholderImage} />
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.iconButton}>
+          <ProfileButton/>
+        </TouchableOpacity>
+        <Image source={PlaceholderImage} style={styles.logo} resizeMode="contain" />
+        <TouchableOpacity style={styles.iconButton} >
+          <SearchButton/>
+        </TouchableOpacity>
       </View>
       <View style={styles.mapContainer}>
         <MapScreen/>
-      </View>
-      <View style={styles.footerContainer}>
-        <Button theme="primary" label="Find a bike" />
       </View>
     </View>
   );
@@ -29,6 +33,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 16,
+    paddingTop: 50,
+    paddingBottom: 10,
+    backgroundColor: '#F9F6F1',
+    position: 'absolute',
+    top: 0,
+    zIndex: 10,
+  },
+  iconButton: {
+    padding: 8,
+  },
+  logo: {
+    height: 80,
+    width: 100,
+  },
   text: {
     color: '#fff'
   },
@@ -37,15 +61,8 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     color: '#fff',
   },
-  imageContainer: {
-    flex: 1,
-  },
   mapContainer: {
     width: '100%',
-    flex: 2,
-  },
-  footerContainer: {
-    flex: 1 / 3,
-    alignItems: 'center',
+    flex: 1,
   },
 });

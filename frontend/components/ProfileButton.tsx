@@ -3,17 +3,17 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 
-export default function SearchButton() {
+export default function ProfileButton() {
   const navigation = useNavigation();
 
   const handlePress = () => {
-    navigation.navigate('search' as never);
+    navigation.navigate('profile' as never);
   }
 
   return (
     <View>
       <Pressable onPress={handlePress}>
-        <Ionicons name="search" size={30} color="#333" />
+        <Ionicons name="person-circle-outline" size={28} color="#333" />
       </Pressable>
     </View>
   );

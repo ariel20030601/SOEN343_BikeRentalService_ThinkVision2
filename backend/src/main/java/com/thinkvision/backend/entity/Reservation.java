@@ -19,7 +19,7 @@ public class Reservation {
     private String bikeId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "rider_id") // ✅ fixed
+    @JoinColumn(name = "rider_id")
     private User rider;
 
     @Column(name = "station_id")

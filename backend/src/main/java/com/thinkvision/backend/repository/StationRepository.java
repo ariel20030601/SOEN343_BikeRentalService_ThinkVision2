@@ -11,4 +11,5 @@ import com.thinkvision.backend.entity.Station;
 @Repository
 public interface StationRepository extends JpaRepository<Station, String> {
     Optional<Station> findById(String id);
+
 }

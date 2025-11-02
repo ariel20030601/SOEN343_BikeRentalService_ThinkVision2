@@ -30,21 +30,21 @@ export const STATIONS_DATA: StationData[] = [
         title: "Station 2", 
         bikes: "10", 
         ebikes: "5", 
-        docks: "11",
+        docks: "0",
         location: { lat: 45.4581, lng: -73.6391 }, 
         address: "Concordia University Loyola Campus",
-        capacity: 26, // 10 + 5 bikes + 11 free docks
+        capacity: 15, 
         status: 'operational'
     },
     {
         id: "3", 
         title: "Station 3", 
-        bikes: "6", 
-        ebikes: "2", 
-        docks: "11",
+        bikes: "3", 
+        ebikes: "0", 
+        docks: "17",
         location: { lat: 45.5075, lng: -73.5643 }, 
-        address: "Concordia University Loyola Campus",
-        capacity: 19, // 6 + 2 bikes + 11 free docks
+        address: "Complexe Desjardins",
+        capacity: 20,
         status: 'operational'
     }
 ];

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import Markers from './Markers';
-import MapLegend from '@/components/MapLegend';
 import StationDetailsPanel from '@/components/StationDetailsPanel';
 import { View, StyleSheet } from 'react-native';
 import { StationData } from '@/hardcode/stationsData';
@@ -52,10 +51,6 @@ export default function MapNative() {
       >
         <Markers onMarkerPress={setSelectedStation} />
       </MapView>
-
-      <View style={styles.legendPosition}>
-        <MapLegend />
-      </View>
 
       <StationDetailsPanel
         visible={selectedStation !== null}

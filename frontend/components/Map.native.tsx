@@ -7,7 +7,7 @@ import { StationData } from '@/hardcode/stationsData';
 
 export default function MapNative() {
   const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
-  const [userRole] = useState<'rider' | 'operator'>('rider'); // TODO: Get from context
+  const [userRole] = useState<'rider' | 'operator'>('operator'); // TODO: Get from context
   const [hasReservedBike, setHasReservedBike] = useState(false);
 
   const handleReserveBike = (station: StationData) => {

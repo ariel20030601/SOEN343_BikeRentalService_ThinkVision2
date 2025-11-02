@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
         color: '#ccc',
     },
     eBadge: {
-        fontSize: 11,
+        fontSize: 8,
         fontWeight: 'bold',
         color: '#2196F3',
         backgroundColor: '#E3F2FD',

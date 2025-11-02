@@ -1,23 +1,42 @@
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Image } from "react-native";
 import MapScreen from "@/components/Map";
-import ImageViewer from '@/components/ImageViewer';
-import Button from '@/components/Button';
+import SearchButton from '@/components/SearchButton'
+import ProfileButton from "@/components/ProfileButton";
+import InfoButton from "@/components/InfoButton";
+import MapLegend from '@/components/MapLegend';
 
 const PlaceholderImage = require('@/assets/images/bibixi_logo.png');
 
-
 export default function Index() {
+
+
   return (
     <View style={styles.container}>
-      <View style={styles.imageContainer}>
-        <ImageViewer imgSource={PlaceholderImage} />
+
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.iconButton}>
+          <ProfileButton />
+        </TouchableOpacity>
+
+          <TouchableOpacity style={styles.iconButton}>
+            <InfoButton />
+          </TouchableOpacity>
+
+        <View style={styles.rightIcons}>
+          <TouchableOpacity style={styles.iconButton}>
+            <SearchButton />
+          </TouchableOpacity>
+        </View>
       </View>
+
       <View style={styles.mapContainer}>
         <MapScreen/>
       </View>
-      <View style={styles.footerContainer}>
-        <Button theme="primary" label="Find a bike" />
+
+      <View style={styles.footer}>
+        <MapLegend/>
       </View>
+
     </View>
   );
 }
@@ -25,27 +44,45 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9F6F1',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#F9F6F1",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  text: {
-    color: '#fff'
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+    paddingHorizontal: 16,
+    paddingTop: 50,
+    paddingBottom: 10,
+    backgroundColor: "#F9F6F1",
+    position: "absolute",
+    top: 0,
+    zIndex: 10,
   },
-  button: {
-    fontSize: 20,
-    textDecorationLine: 'underline',
-    color: '#fff',
+  iconButton: {
+    padding: 8,
   },
-  imageContainer: {
-    flex: 1,
+  rightIcons: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  logo: {
+    height: 80,
+    width: 100,
   },
   mapContainer: {
-    width: '100%',
-    flex: 2,
+    width: "100%",
+    flex: 1,
   },
-  footerContainer: {
-    flex: 1 / 3,
-    alignItems: 'center',
+  footer: {
+    position: "absolute",
+    bottom: 0,
+    width: "100%",
+    backgroundColor: "#F9F6F1",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    zIndex: 10,
   },
 });

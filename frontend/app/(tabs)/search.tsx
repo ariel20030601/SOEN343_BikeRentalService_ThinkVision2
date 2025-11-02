@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, FlatList} from "react-native";
 import { SearchBar } from "react-native-elements";
 import { StationData, STATIONS_DATA } from "@/hardcode/stationsData";
 
-const Item: React.FC<StationData> = ({ title, bikes, ebikes, docks }) => (
+const Item: React.FC<StationData> = ({ title, bikes, ebikes, docks, location, address, capacity, status }) => (
     <View style={styles.item}>
         <View style={styles.titleContainer}>
             <Text style={styles.itemTitle}>{title}</Text>
@@ -104,7 +104,11 @@ const Search = () => {
                         title={item.title}
                         bikes={item.bikes}
                         ebikes={item.ebikes}
-                        docks={item.docks} />}
+                        docks={item.docks}
+                        location={item.location}
+                        address={item.address}
+                        capacity={item.capacity}
+                        status={item.status} />}
                 keyExtractor={(item: StationData) => item.id}
             />
         </View>

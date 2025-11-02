@@ -2,6 +2,7 @@ import { View, StyleSheet, TouchableOpacity, Image } from "react-native";
 import MapScreen from "@/components/Map";
 import SearchButton from '@/components/SearchButton'
 import ProfileButton from "@/components/ProfileButton";
+import MapLegend from '@/components/MapLegend';
 
 const PlaceholderImage = require('@/assets/images/bibixi_logo.png');
 
@@ -21,6 +22,9 @@ export default function Index() {
       </View>
       <View style={styles.mapContainer}>
         <MapScreen/>
+      </View>
+      <View style={styles.footer}>
+        <MapLegend/>
       </View>
     </View>
   );
@@ -64,5 +68,14 @@ const styles = StyleSheet.create({
   mapContainer: {
     width: '100%',
     flex: 1,
+  },
+    footer: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    backgroundColor: '#F9F6F1',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    zIndex: 10,
   },
 });

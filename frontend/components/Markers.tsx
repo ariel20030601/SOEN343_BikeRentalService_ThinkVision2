@@ -1,32 +1,35 @@
-import { Callout, Marker } from 'react-native-maps';
-import { Alert, Text, View } from 'react-native';
-import { markers } from '@/hardcode/markersData';
+import { Marker } from 'react-native-maps';
+import { STATIONS_DATA, StationData } from '@/hardcode/stationsData';
 
-export default function Markers() {
-    const onMarkerSelected = (marker: any) => {
-        Alert.alert(marker.name);
-    }
+interface MarkersProps {
+  onMarkerPress: (station: StationData) => void;
+}
 
-    const calloutPressed = (ev: any) => {
-        console.log(ev)
-    }
+export default function Markers({ onMarkerPress }: MarkersProps) {
+  return (
+    <>
+      {STATIONS_DATA.map((station) => (
+        <Marker
+          key={station.id}
+          title={station.title}
+          description={`${parseInt(station.bikes) + parseInt(station.ebikes)} bikes available`}
+          coordinate={{
+            latitude: station.location.lat,
+            longitude: station.location.lng
+          }}
+          onPress={() => onMarkerPress(station)}
+          pinColor={getMarkerColor(station)}
+        />
+      ))}
+    </>
+  );
+}
 
-    return (
-        <>
-            {markers.map((marker, index) => (
-                <Marker
-                    key={index}
-                    title={marker.name}
-                    coordinate={marker}
-                    onPress={() => onMarkerSelected(marker)}
-                >
-                    <Callout onPress={calloutPressed}>
-                        <View style={{ padding: 10 }}>
-                            <Text style={{ fontSize: 24 }}>Hello</Text>
-                        </View>
-                    </Callout>
-                </Marker>
-            ))}
-        </>
-    );
+function getMarkerColor(station: StationData): string {
+  const bikesAvailable = parseInt(station.bikes) + parseInt(station.ebikes);
+  const fullnessPercent = (bikesAvailable / station.capacity) * 100;
+  
+  if (fullnessPercent === 0 || fullnessPercent === 100) return 'red';
+  if (fullnessPercent < 25 || fullnessPercent > 85) return 'yellow';
+  return 'green';
 }

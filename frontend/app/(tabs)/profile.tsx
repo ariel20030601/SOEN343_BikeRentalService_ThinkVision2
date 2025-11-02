@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import { StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCallback } from 'react';
 
@@ -42,16 +43,17 @@ const styles = StyleSheet.create({
 export default function ProfileScreen() {
   const { user, logout, isLoading } = useAuth();
 
-  useEffect(() => {
-    console.log('ProfileScreen - user:', user);
-    console.log('ProfileScreen - isLoading:', isLoading);
-    
-    if (!isLoading && !user) {
-      console.log('No user found, redirecting to login');
-      router.replace('/(tabs)/login'); 
-    }
-  }, [user, isLoading]);
-
+  useFocusEffect(
+    useCallback(() => {
+      console.log('ProfileScreen - user:', user);
+      console.log('ProfileScreen - isLoading:', isLoading);
+      
+      if (!isLoading && !user) {
+        console.log('No user found, redirecting to login');
+        router.replace('/(tabs)/login'); 
+      }
+    }, [user, isLoading])
+  );
   const handleSignOut = () => {
     console.log('handleSignOut called!');
     

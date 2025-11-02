@@ -33,40 +33,40 @@ public class OperatorService {
      * Move a bike manually between stations
      */
     public void moveBike(Integer operatorId, String fromStationId, String toStationId, String bikeId) {
-        // 1️⃣ Validate operator
+        // Validate operator
         User operator = userRepo.findById(operatorId)
                 .orElseThrow(() -> new IllegalStateException("Operator not found"));
 
         if (!"OPERATOR".equalsIgnoreCase(operator.getRole()))
             throw new IllegalStateException("User not authorized to move bikes");
 
-        // 2️⃣ Load bike
+        // Load bike
         Bike bike = bikeRepo.findById(bikeId)
                 .orElseThrow(() -> new IllegalStateException("Bike not found"));
 
-        // 3️⃣ Validate source station
+        // Validate source station
         Station fromStation = stationRepo.findById(fromStationId)
                 .orElseThrow(() -> new IllegalStateException("Source station not found"));
 
-        // 4️⃣ Validate destination station
+        // Validate destination station
         Station toStation = stationRepo.findById(toStationId)
                 .orElseThrow(() -> new IllegalStateException("Destination station not found"));
 
         if (toStation.getStatus() == StationStatus.OUT_OF_SERVICE)
             throw new IllegalStateException("Destination station is out of service");
 
-        // 5️⃣ Find free dock at destination
+        // Find free dock at destination
         Dock freeDock = dockRepo.findFirstByStation_IdAndStatus(toStationId, DockStatus.EMPTY)
                 .orElseThrow(() -> new IllegalStateException("No free dock available at destination"));
 
-        // 6️⃣ Detach from old dock (if any)
+        // Detach from old dock (if any)
         Dock oldDock = bike.getDock();
         if (oldDock != null) {
             oldDock.setStatus(DockStatus.EMPTY);
             dockRepo.save(oldDock);
         }
 
-        // 7️⃣ Attach to new dock
+        // Attach to new dock
         bike.setDock(freeDock);
         bike.setStatus(BikeStatus.AVAILABLE);
         bikeRepo.save(bike);
@@ -93,7 +93,7 @@ public class OperatorService {
             throw new IllegalStateException("User not authorized to toggle stations");
 
         Station station = stationRepo.findById(stationId)
-                .orElseThrow(() -> new IllegalStateException("Station not found"));
+                .orElseThrow(() -> new IllegalStateException("Station not found"+ stationId));
 
         if (station.getStatus() == StationStatus.OUT_OF_SERVICE) {
             station.setStatus(StationStatus.OCCUPIED);

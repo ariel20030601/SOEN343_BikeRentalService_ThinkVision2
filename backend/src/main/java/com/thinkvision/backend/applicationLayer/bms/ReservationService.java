@@ -74,7 +74,7 @@ public class ReservationService {
         return res;
     }
 
-    // 🕒 Scheduled job: run every 60 seconds
+    // Scheduled job: run every 60 seconds
     @Scheduled(fixedRate = 60000)
     public void expireReservations() {
         Instant now = Instant.now();

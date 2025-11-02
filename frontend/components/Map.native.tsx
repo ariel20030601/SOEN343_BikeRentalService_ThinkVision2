@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
-import Markers from './Markers';
+import Markers from './Markers.native';
 import StationDetailsPanel from '@/components/StationDetailsPanel';
 import { View, StyleSheet } from 'react-native';
 import { StationData } from '@/hardcode/stationsData';
@@ -49,7 +49,7 @@ export default function MapNative() {
         showsUserLocation
         showsMyLocationButton
       >
-        <Markers onMarkerPress={setSelectedStation} />
+      <Markers onMarkerPress={setSelectedStation} />
       </MapView>
 
       <StationDetailsPanel

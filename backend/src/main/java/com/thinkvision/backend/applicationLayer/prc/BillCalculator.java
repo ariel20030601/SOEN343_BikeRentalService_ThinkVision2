@@ -28,7 +28,7 @@ public class BillCalculator {
     private BikeRepository bikeRepo;
 
     @EventListener
-    public void onTripEnded(TripEndedEvent event) {
+    public void computeCost(TripEndedEvent event) {
         Optional<Trip> opt = tripRepo.findById(Long.toString(event.getTripId()));
         if (opt.isEmpty()) return;
 

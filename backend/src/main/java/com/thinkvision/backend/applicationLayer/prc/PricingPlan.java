@@ -4,4 +4,8 @@ public interface PricingPlan {
 
     public double getFare(long durationInMinutes);
 
+    String getPlanName();
+    double getBaseFare();
+    double getAdditionalFarePerMinute();
+
 }

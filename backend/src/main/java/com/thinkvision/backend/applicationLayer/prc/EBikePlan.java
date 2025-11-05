@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class EBikePlan implements PricingPlan{
+    private static final String PLAN_NAME = "E-Bike Plan";
     private static final double BASE_FARE = 15.0; // Base fare for the first 30 minutes
     private static final double ADDITIONAL_FARE_PER_MINUTE = 0.50; // Fare per additional minute after 30 minutes
 

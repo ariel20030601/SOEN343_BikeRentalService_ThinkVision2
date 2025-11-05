@@ -20,16 +20,16 @@ public class EBikePlan implements PricingPlan{
 
     @Override
     public String getPlanName() {
-        return "";
+        return PLAN_NAME;
     }
 
     @Override
     public double getBaseFare() {
-        return 0;
+        return BASE_FARE;
     }
 
     @Override
     public double getAdditionalFarePerMinute() {
-        return 0;
+        return ADDITIONAL_FARE_PER_MINUTE;
     }
 }

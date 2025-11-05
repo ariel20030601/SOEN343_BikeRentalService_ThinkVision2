@@ -1,5 +1,7 @@
 package com.thinkvision.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,10 +23,12 @@ public class Dock {
     private DockStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
     @JoinColumn(name = "station_id")
     private Station station;
 
     @OneToOne(mappedBy = "dock", fetch = FetchType.LAZY)
+    @JsonManagedReference
     private Bike bike;
 
     @Version

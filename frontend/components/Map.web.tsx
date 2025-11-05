@@ -4,6 +4,7 @@ import {APIProvider, Map} from '@vis.gl/react-google-maps';
 import { StationData } from '@/hardcode/stationsData';
 import Markers from './Markers.web';
 import StationDetailsPanel from '@/components/StationDetailsPanel';
+import { Alert } from 'react-native';
 
 
 export default function MapWeb() {
@@ -25,15 +26,44 @@ export default function MapWeb() {
     // TODO: Implement actual return logic
   };
 
-  const handleMoveBike = (station: StationData) => {
-    console.log('Move bike from', station.title);
-    // TODO: Navigate to destination picker or show modal
+    const handleMoveBike = async (station: StationData) => {
+    if (!station || !selectedStation) return;
+    try {
+      const response = await fetch(
+        `http://localhost:8080/api/operator/move-bike?operatorId=${operatorId}&fromStationId=${station.id}&toStationId=S3&bikeId=${station.docks?.[0].bike?.id}`,
+        { method: 'POST' }
+      );
+      if (response.ok) {
+        Alert.alert('Success', 'Bike moved successfully!');
+      } else {
+        const errorText = await response.text();
+        Alert.alert('Error', errorText);
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Failed to move bike');
+    }
   };
 
-  const handleMaintenanceBike = (station: StationData, dockIndex: number) => {
-    console.log('Send to maintenance', station.title, dockIndex);
-    setSelectedStation(null);
-    // TODO: Implement maintenance logic
+
+  const handleMaintenanceBike = async (station: StationData, dockIndex: number) => {
+    const dock = station.docks?.[dockIndex];
+    if (!dock) return;
+    try {
+      const response = await fetch(
+        `http://localhost:8080/api/operator/toggle-dock?operatorId=${operatorId}&dockId=${dock.id}`,
+        { method: 'POST' }
+      );
+      if (response.ok) {
+        Alert.alert('🔧 Success', `Dock ${dock.name} maintenance toggled`);
+      } else {
+        const errorText = await response.text();
+        Alert.alert('❌ Error', errorText);
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Failed to toggle dock maintenance');
+    }
   };
 
   return (

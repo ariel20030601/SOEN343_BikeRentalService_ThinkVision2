@@ -17,4 +17,19 @@ public class StandardPlan implements  PricingPlan {
             return BASE_FARE + (additionalMinutes * ADDITIONAL_FARE_PER_MINUTE);
         }
     }
+
+    @Override
+    public String getPlanName() {
+        return "";
+    }
+
+    @Override
+    public double getBaseFare() {
+        return 0;
+    }
+
+    @Override
+    public double getAdditionalFarePerMinute() {
+        return 0;
+    }
 }

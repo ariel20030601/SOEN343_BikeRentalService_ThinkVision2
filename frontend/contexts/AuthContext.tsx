@@ -1,18 +1,30 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-interface AuthContextType {
-  user: any | null;
+export interface AuthUser {
+  id: string;
+  username: string;
+  // add other fields as needed
+}
+
+export interface AuthContextType {
+  user: AuthUser | null;
   token: string | null;
-  login: (userData: any, authToken: string) => Promise<void>;
+  login: (userData: AuthUser, authToken: string) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
+  return context;
+}
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -37,7 +49,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const login = async (userData: any, authToken: string) => {
+  const login = async (userData: AuthUser, authToken: string) => {
     console.log('AuthContext - login called');
     try {
       await AsyncStorage.setItem('authToken', authToken);
@@ -72,12 +84,4 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };

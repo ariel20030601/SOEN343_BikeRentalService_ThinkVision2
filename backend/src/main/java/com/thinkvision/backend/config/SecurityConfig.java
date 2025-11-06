@@ -3,6 +3,10 @@ package com.thinkvision.backend.config;
 import com.thinkvision.backend.security.CustomUserDetailsService;
 import com.thinkvision.backend.security.JwtAuthenticationFilter;
 import com.thinkvision.backend.security.JwtUtils;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -11,6 +15,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 
+import java.io.IOException;
 import java.util.List;
 
 @Configuration

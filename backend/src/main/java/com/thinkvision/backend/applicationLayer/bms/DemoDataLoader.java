@@ -14,23 +14,31 @@ public class DemoDataLoader implements CommandLineRunner {
     private final StationRepository stationRepo;
     private final DockRepository dockRepo;
     private final BikeRepository bikeRepo;
-    private PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
 
     public DemoDataLoader(
             UserRepository userRepo,
             StationRepository stationRepo,
             DockRepository dockRepo,
-            BikeRepository bikeRepo) {
+            BikeRepository bikeRepo,
+            PasswordEncoder passwordEncoder) {
         this.userRepo = userRepo;
         this.stationRepo = stationRepo;
         this.dockRepo = dockRepo;
         this.bikeRepo = bikeRepo;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     @Transactional
     public void run(String... args) {
-        // Create demo users
+        createDemoUsers();
+        createStation1();
+        createStation2();
+        createStation3();
+    }
+
+    private void createDemoUsers() {
         if (userRepo.findByUsername("demoRider").isEmpty()) {
             User rider = new User();
             rider.setFirstName("Demo");
@@ -54,150 +62,154 @@ public class DemoDataLoader implements CommandLineRunner {
             operator.setAddress("456 Service Rd");
             userRepo.save(operator);
         }
+    }
 
-        // ===============================
-        // STATION 1 - Concordia SGW
-        // ===============================
-        if (stationRepo.findById("S1").isEmpty()) {
-            Station s1 = new Station();
-            s1.setId("S1");
-            s1.setCode("STATION1");
-            s1.setName("Station 1");
-            s1.setAddress("Concordia University SGW Campus");
-            s1.setLatitude(45.4948);
-            s1.setLongitude(-73.5779);
-            s1.setCapacity(23);
-            s1.setAvailableBikes(13);
-            s1.setFreeDocks(10);
-            s1.setStatus(StationStatus.OCCUPIED);
-            s1.setExpiresAfterMinutes(5);
-            stationRepo.save(s1);
+    // ===============================
+    // STATION 1 - Concordia SGW
+    // ===============================
+    private void createStation1() {
+        if (stationRepo.existsById("S1")) return;
 
-            // Add docks
-            for (int i = 1; i <= s1.getCapacity(); i++) {
-                Dock dock = new Dock();
-                dock.setId("S1D" + i);
-                dock.setName("Dock " + i);
-                dock.setStatus(i <= 13 ? DockStatus.OCCUPIED : DockStatus.EMPTY);
-                dock.setStation(s1);
-                dockRepo.save(dock);
+        Station s1 = new Station();
+        s1.setId("S1");
+        s1.setCode("STATION1");
+        s1.setName("Station 1");
+        s1.setAddress("Concordia University SGW Campus");
+        s1.setLatitude(45.4948);
+        s1.setLongitude(-73.5779);
+        s1.setCapacity(23);
+        s1.setAvailableBikes(13);
+        s1.setFreeDocks(10);
+        s1.setStatus(StationStatus.OCCUPIED);
+        s1.setExpiresAfterMinutes(5);
 
-                if (i <= 13) {
-                    Bike bike = new Bike();
-                    bike.setId("S1B" + i);
-                    bike.setStatus(BikeStatus.AVAILABLE);
-                    bike.setType(BikeType.STANDARD);
-                    bike.setDock(dock);
-                    bikeRepo.save(bike);
-                    dock.setBike(bike);
-                    dockRepo.save(dock);
-                }
-            }
+        // build docks + bikes in memory, then save station once
+        for (int i = 1; i <= s1.getCapacity(); i++) {
+            Dock dock = new Dock();
+            dock.setId("S1D" + i);
+            dock.setName("Dock " + i);
+            dock.setStation(s1);       // set parent
+            s1.getDocks().add(dock);   // keep bidirectional in sync
 
-            stationRepo.save(s1);
-            System.out.println("Loaded Station 1 (SGW) with 13 bikes and 10 empty docks.");
-        }
-
-        // ===============================
-        // STATION 2 - Loyola
-        // ===============================
-        if (stationRepo.findById("S2").isEmpty()) {
-            Station s2 = new Station();
-            s2.setId("S2");
-            s2.setCode("STATION2");
-            s2.setName("Station 2");
-            s2.setAddress("Concordia University Loyola Campus");
-            s2.setLatitude(45.4581);
-            s2.setLongitude(-73.6391);
-            s2.setCapacity(15);
-            s2.setAvailableBikes(15);
-            s2.setFreeDocks(0);
-            s2.setStatus(StationStatus.FULL);
-            s2.setExpiresAfterMinutes(5);
-            stationRepo.save(s2);
-
-            // Add docks
-            for (int i = 1; i <= s2.getCapacity(); i++) {
-                Dock dock = new Dock();
-                dock.setId("S2D" + i);
-                dock.setName("Dock " + i);
+            if (i <= 13) {
                 dock.setStatus(DockStatus.OCCUPIED);
-                dock.setStation(s2);
-                dockRepo.save(dock);
 
                 Bike bike = new Bike();
-                bike.setId("S2B" + i);
+                bike.setId("S1B" + i);
                 bike.setStatus(BikeStatus.AVAILABLE);
-                // first 10 are standard, last 5 are e-bikes
-                bike.setType(i <= 10 ? BikeType.STANDARD : BikeType.E_BIKE);
+                bike.setType(BikeType.STANDARD);
+
+                bike.setDock(dock);    // owning side
+                dock.setBike(bike);    // inverse side
+            } else {
+                dock.setStatus(DockStatus.EMPTY);
+            }
+        }
+
+        // cascade Station -> Docks -> Bikes
+        stationRepo.save(s1);
+
+        System.out.println("Loaded Station 1 (SGW) with 13 bikes and 10 empty docks.");
+    }
+
+    // ===============================
+    // STATION 2 - Loyola
+    // ===============================
+    private void createStation2() {
+        if (stationRepo.existsById("S2")) return;
+
+        Station s2 = new Station();
+        s2.setId("S2");
+        s2.setCode("STATION2");
+        s2.setName("Station 2");
+        s2.setAddress("Concordia University Loyola Campus");
+        s2.setLatitude(45.4581);
+        s2.setLongitude(-73.6391);
+        s2.setCapacity(15);
+        s2.setAvailableBikes(15);
+        s2.setFreeDocks(0);
+        s2.setStatus(StationStatus.FULL);
+        s2.setExpiresAfterMinutes(5);
+
+        for (int i = 1; i <= s2.getCapacity(); i++) {
+            Dock dock = new Dock();
+            dock.setId("S2D" + i);
+            dock.setName("Dock " + i);
+            dock.setStatus(DockStatus.OCCUPIED);
+            dock.setStation(s2);
+            s2.getDocks().add(dock);
+
+            Bike bike = new Bike();
+            bike.setId("S2B" + i);
+            bike.setStatus(BikeStatus.AVAILABLE);
+            bike.setType(i <= 10 ? BikeType.STANDARD : BikeType.E_BIKE);
+
+            bike.setDock(dock);
+            dock.setBike(bike);
+        }
+
+        stationRepo.save(s2);
+
+        System.out.println("Loaded Station 2 (Loyola) with 15 bikes (10 standard, 5 e-bikes).");
+    }
+
+    // ===============================
+    // STATION 3 - Complexe Desjardins
+    // ===============================
+    private void createStation3() {
+        if (stationRepo.existsById("S3")) return;
+
+        Station s3 = new Station();
+        s3.setId("S3");
+        s3.setCode("STATION3");
+        s3.setName("Station 3");
+        s3.setAddress("Complexe Desjardins");
+        s3.setLatitude(45.5075);
+        s3.setLongitude(-73.5643);
+        s3.setCapacity(20);
+        s3.setAvailableBikes(3);
+        s3.setFreeDocks(17);
+        s3.setStatus(StationStatus.OCCUPIED);
+        s3.setExpiresAfterMinutes(5);
+
+        for (int i = 1; i <= s3.getCapacity(); i++) {
+            Dock dock = new Dock();
+            dock.setId("S3D" + i);
+            dock.setName("Dock " + i);
+            dock.setStation(s3);
+            s3.getDocks().add(dock);
+
+            if (i <= 3) {
+                dock.setStatus(DockStatus.OCCUPIED);
+
+                Bike bike = new Bike();
+                bike.setId("S3B" + i);
+                bike.setStatus(BikeStatus.AVAILABLE);
+                bike.setType(BikeType.STANDARD);
+
                 bike.setDock(dock);
-                bikeRepo.save(bike);
-
                 dock.setBike(bike);
-                dockRepo.save(dock);
+            } else {
+                dock.setStatus(DockStatus.EMPTY);
             }
-
-            stationRepo.save(s2);
-            System.out.println("Loaded Station 2 (Loyola) with 15 bikes (10 standard, 5 e-bikes).");
         }
 
-        // ===============================
-        // STATION 3 - Complexe Desjardins
-        // ===============================
-        if (stationRepo.findById("S3").isEmpty()) {
-            Station s3 = new Station();
-            s3.setId("S3");
-            s3.setCode("STATION3");
-            s3.setName("Station 3");
-            s3.setAddress("Complexe Desjardins");
-            s3.setLatitude(45.5075);
-            s3.setLongitude(-73.5643);
-            s3.setCapacity(20);
-            s3.setAvailableBikes(3);
-            s3.setFreeDocks(17);
-            s3.setStatus(StationStatus.OCCUPIED);
-            s3.setExpiresAfterMinutes(5);
-            stationRepo.save(s3);
+        stationRepo.save(s3);
 
-            // Add docks
-            for (int i = 1; i <= s3.getCapacity(); i++) {
-                Dock dock = new Dock();
-                dock.setId("S3D" + i);
-                dock.setName("Dock " + i);
-                dock.setStatus(i <= 3 ? DockStatus.OCCUPIED : DockStatus.EMPTY);
-                dock.setStation(s3);
-                dockRepo.save(dock);
-
-                if (i <= 3) {
-                    Bike bike = new Bike();
-                    bike.setId("S3B" + i);
-                    bike.setStatus(BikeStatus.AVAILABLE);
-                    bike.setType(BikeType.STANDARD);
-                    bike.setDock(dock);
-                    bikeRepo.save(bike);
-                    dock.setBike(bike);
-                    dockRepo.save(dock);
-                }
-            }
-
-            stationRepo.save(s3);
-            System.out.println("Loaded Station 3 (Desjardins) with 3 bikes and 17 empty docks.");
-        }
+        System.out.println("Loaded Station 3 (Desjardins) with 3 bikes and 17 empty docks.");
     }
 
     @Transactional
     public void reloadDemoData() {
         System.out.println("Resetting BikeShare system to demo baseline...");
 
-        dockRepo.deleteAll();
         bikeRepo.deleteAll();
+        dockRepo.deleteAll();
         stationRepo.deleteAll();
 
-        // Recreate baseline state
+        // varargs, so this is fine
         run();
 
         System.out.println("Demo data reloaded successfully.");
     }
 }
-
-

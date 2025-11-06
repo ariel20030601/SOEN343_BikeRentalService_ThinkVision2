@@ -27,8 +27,10 @@ public class Dock {
     @JoinColumn(name = "station_id")
     private Station station;
 
-    @OneToOne(mappedBy = "dock", fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @OneToOne(mappedBy = "dock",
+            fetch = FetchType.LAZY,
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)     @JsonManagedReference
     private Bike bike;
 
     @Version

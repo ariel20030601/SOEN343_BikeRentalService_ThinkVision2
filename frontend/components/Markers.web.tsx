@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
+
 
 export interface StationData {
   id: string;
   name: string;
+  address: string;
   latitude: number;
   longitude: number;
   capacity: number;
@@ -16,36 +18,36 @@ export interface StationData {
     status: string;
     bike?: {
       id: string;
-      type: 'STANDARD' | 'E_BIKE';
+      type: "STANDARD" | "E_BIKE";
       status: string;
     };
   }[];
 }
 
 interface MarkersProps {
+  stations: StationData[];
   onMarkerPress: (station: StationData) => void;
 }
 
-export default function Markers({ onMarkerPress }: MarkersProps) {
-  const [stations, setStations] = useState<StationData[]>([]);
-
-  useEffect(() => {
-    fetch('http://localhost:8080/api/stations')
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to fetch stations');
-        return res.json();
-      })
-      .then((json: StationData[]) => setStations(json))
-      .catch((err) => console.error('Failed to fetch stations:', err));
-  }, []);
+export default function Markers({ stations, onMarkerPress }: MarkersProps) {
+  if (!stations || stations.length === 0) {
+    console.warn('No stations to display on map');
+    return null;
+  }
 
   return (
     <>
       {stations.map((station) => (
         <AdvancedMarker
           key={station.id}
-          position={{ lat: station.latitude, lng: station.longitude }}
-          onClick={() => onMarkerPress(station)}
+          position={{
+            lat: station.latitude,
+            lng: station.longitude
+          }}
+          onClick={() => {
+            console.log(`Clicked marker for ${station.name}`);
+            onMarkerPress(station);
+          }}
           title={`${station.name} - ${station.availableBikes} bikes available`}
         >
           <Pin

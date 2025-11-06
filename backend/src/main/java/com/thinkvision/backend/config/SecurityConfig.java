@@ -61,7 +61,8 @@ public class SecurityConfig {
                                 "/api/bikes/**",
                                 "/api/bikes/reserve",
                                 "/api/bikes/checkout",
-                                "/api/bikes/return"
+                                "/api/bikes/return",
+                                "/api/prc/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

@@ -28,8 +28,8 @@ public class PRCController {
         return pricingService.getAllPricingPlans();
     }
 
-    @GetMapping("/summary/{tripId}")
-    public ResponseEntity<TripSummaryDTO> getSummary(@PathVariable Long tripId) {
+    @GetMapping("/summary")
+    public ResponseEntity<TripSummaryDTO> getSummary(@RequestParam(name="tripId") Long tripId) {
         return summaryService.getSummary(tripId)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());

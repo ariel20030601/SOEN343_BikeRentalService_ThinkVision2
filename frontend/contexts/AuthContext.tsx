@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export interface AuthUser {
   id: string;
   username: string;
+  role: 'rider' | 'operator';
   // add other fields as needed
 }
 

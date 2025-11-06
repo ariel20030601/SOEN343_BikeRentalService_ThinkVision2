@@ -1,10 +1,13 @@
 package com.thinkvision.backend.applicationLayer.bms;
 
+import com.thinkvision.backend.applicationLayer.dto.TripEndedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import com.thinkvision.backend.applicationLayer.dto.EventPublisher;
 import com.thinkvision.backend.entity.*;
 import com.thinkvision.backend.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 
 import java.time.Instant;
 
@@ -25,6 +28,9 @@ public class ReturnService {
 
     @Autowired
     private EventPublisher eventPublisher;
+
+    @Autowired
+    private ApplicationEventPublisher applicationEventPublisher;
 
     @Autowired
     private StationService stationService;
@@ -63,6 +69,8 @@ public class ReturnService {
         stationService.updateOccupancy(stationId);
 
         eventPublisher.publish("TripEnded", trip.getId());
+        applicationEventPublisher.publishEvent(new TripEndedEvent(trip.getId()));
+
         return trip;
     }
 }

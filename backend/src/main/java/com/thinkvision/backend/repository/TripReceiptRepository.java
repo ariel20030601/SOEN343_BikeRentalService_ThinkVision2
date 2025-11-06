@@ -11,5 +11,6 @@ import java.util.Optional;
 public interface TripReceiptRepository extends JpaRepository<TripReceipt, Long> {
 
     Optional<TripReceipt> findByTripId(Long tripId);
-    List<TripReceipt> findByUserId(Integer userId);
+    // query receipts for a given user, most recent first
+    List<TripReceipt> findAllByUserIdOrderByStartDateDesc(Integer userId);
 }

@@ -1,17 +1,14 @@
 package com.thinkvision.backend.applicationLayer.prc;
 
 import com.thinkvision.backend.applicationLayer.dto.BillComputedEvent;
-import com.thinkvision.backend.entity.Bike;
-import com.thinkvision.backend.entity.BikeType;
-import com.thinkvision.backend.entity.Trip;
-import com.thinkvision.backend.entity.TripReceipt;
+import com.thinkvision.backend.entity.*;
 import com.thinkvision.backend.repository.BikeRepository;
+import com.thinkvision.backend.repository.StationRepository;
 import com.thinkvision.backend.repository.TripRepository;
 import com.thinkvision.backend.applicationLayer.dto.TripEndedEvent;
 import com.thinkvision.backend.repository.TripReceiptRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -26,6 +23,9 @@ public class BillCalculator {
 
     @Autowired
     private TripReceiptRepository tripReceiptRepo;
+
+    @Autowired
+    private StationRepository stationRepo;
 
     @Autowired
     private BikeRepository bikeRepo;
@@ -54,8 +54,13 @@ public class BillCalculator {
         // keep decoupled: for now compute and log; or forward to billing repo/service if present
         System.out.println("BillCalculator: tripId=" + trip.getId() + " minutes=" + minutes + " cost=" + cost);
 
+        Station startStation = stationRepo.findById(trip.getStartStationId()).orElse(null);
+        Station endStation = stationRepo.findById(trip.getEndStationId()).orElse(null);
+
         // save a billing record here.
-        tripReceiptRepo.save(new TripReceipt(trip.getId(),trip.getRider().getId(), cost));
+        assert startStation != null;
+        tripReceiptRepo.save(new TripReceipt(trip.getId(),trip.getRider().getId(), trip.getStartTime(), trip.getEndTime(),
+                bike.getId(), startStation.getName(), endStation.getName(), cost));
     }
 
     private PricingPlan determinePricingPlan(Bike bike) {

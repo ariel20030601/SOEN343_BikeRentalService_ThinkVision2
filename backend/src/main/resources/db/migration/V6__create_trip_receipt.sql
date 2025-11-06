@@ -8,7 +8,7 @@ CREATE TABLE trip_receipts (
   bike_id VARCHAR(50) NOT NULL,
   start_station_id VARCHAR(50) NOT NULL,
   end_station_id VARCHAR(50) NOT NULL,
-  fare DECIMAL(10,2) NOT NULL,
+  fare FLOAT(50) NOT NULL,
   PRIMARY KEY (id),
   KEY idx_trip_receipts_trip_id (trip_id),
   KEY idx_trip_receipts_user_id (user_id),

@@ -1,6 +1,7 @@
 package com.thinkvision.backend.applicationLayer.prc;
 
 import com.thinkvision.backend.applicationLayer.dto.BillComputedEvent;
+import com.thinkvision.backend.applicationLayer.dto.ProcessPaymentEvent;
 import com.thinkvision.backend.entity.*;
 import com.thinkvision.backend.repository.BikeRepository;
 import com.thinkvision.backend.repository.StationRepository;
@@ -32,6 +33,8 @@ public class BillCalculator {
 
     private ApplicationEventPublisher applicationEventPublisher;
 
+    private PaymentService paymentService;
+
     @EventListener
     public void computeCost(TripEndedEvent event) {
         Optional<Trip> opt = tripRepo.findById(Long.toString(event.getTripId()));
@@ -61,6 +64,8 @@ public class BillCalculator {
         assert startStation != null;
         tripReceiptRepo.save(new TripReceipt(trip.getId(),trip.getRider().getId(), trip.getStartTime(), trip.getEndTime(),
                 bike.getId(), startStation.getName(), endStation.getName(), cost));
+
+        applicationEventPublisher.publishEvent(new ProcessPaymentEvent(trip, cost));
     }
 
     private PricingPlan determinePricingPlan(Bike bike) {

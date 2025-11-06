@@ -1,5 +1,6 @@
 package com.thinkvision.backend.applicationLayer.prc;
 
+import com.thinkvision.backend.applicationLayer.dto.BillComputedEvent;
 import com.thinkvision.backend.entity.Bike;
 import com.thinkvision.backend.entity.BikeType;
 import com.thinkvision.backend.entity.Trip;
@@ -8,7 +9,9 @@ import com.thinkvision.backend.repository.BikeRepository;
 import com.thinkvision.backend.repository.TripRepository;
 import com.thinkvision.backend.applicationLayer.dto.TripEndedEvent;
 import com.thinkvision.backend.repository.TripReceiptRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -27,6 +30,8 @@ public class BillCalculator {
     @Autowired
     private BikeRepository bikeRepo;
 
+    private ApplicationEventPublisher applicationEventPublisher;
+
     @EventListener
     public void computeCost(TripEndedEvent event) {
         Optional<Trip> opt = tripRepo.findById(Long.toString(event.getTripId()));
@@ -42,6 +47,9 @@ public class BillCalculator {
         Bike bike = bikeOptional.get();
         PricingPlan pricingPlan = determinePricingPlan(bike);
         double cost = pricingPlan.getFare(minutes);
+
+        // publish cost computed event for trip summary
+        applicationEventPublisher.publishEvent(new BillComputedEvent(trip, bike, cost));
 
         // keep decoupled: for now compute and log; or forward to billing repo/service if present
         System.out.println("BillCalculator: tripId=" + trip.getId() + " minutes=" + minutes + " cost=" + cost);

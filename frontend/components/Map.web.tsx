@@ -5,6 +5,10 @@ import { APIProvider, Map } from '@vis.gl/react-google-maps';
 import Markers from './Markers.web';
 import StationDetailsPanel from '@/components/StationDetailsPanel';
 
+
+export type StationStatus = "EMPTY" | "OCCUPIED" | "FULL" | "OUT_OF_SERVICE";
+
+
 export interface StationData {
   id: string;
   name: string;
@@ -14,7 +18,7 @@ export interface StationData {
   capacity: number;
   availableBikes: number;
   freeDocks: number;
-  status: string;
+  status: StationStatus;
   docks?: {
     id: string;
     name: string;
@@ -37,7 +41,6 @@ export default function MapWeb() {
   const [showDestinationModal, setShowDestinationModal] = useState(false);
   const [moveBikeSource, setMoveBikeSource] = useState<{station: StationData, bikeId: string} | null>(null);
 
-  // Fetch stations from API
   useEffect(() => {
     async function fetchStations() {
       try {

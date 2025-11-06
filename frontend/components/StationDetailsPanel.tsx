@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+
 import {
   View,
   Text,
@@ -21,7 +22,9 @@ interface Dock {
   };
 }
 
-interface StationData {
+export type StationStatus = "EMPTY" | "OCCUPIED" | "FULL" | "OUT_OF_SERVICE";
+
+export interface StationData {
   id: string;
   name: string;
   address: string;
@@ -30,10 +33,18 @@ interface StationData {
   capacity: number;
   availableBikes: number;
   freeDocks: number;
-  status: 'EMPTY' | 'OCCUPIED' | 'FULL' | 'OUT_OF_SERVICE';
-  docks?: Dock[];
+  status: StationStatus;
+  docks?: {
+    id: string;
+    name: string;
+    status: string;
+    bike?: {
+      id: string;
+      type: "STANDARD" | "E_BIKE";
+      status: string;
+    };
+  }[];
 }
-
 interface StationDetailsPanelProps {
   visible: boolean;
   station: StationData | null;

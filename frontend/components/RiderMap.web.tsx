@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet, Alert, TouchableOpacity, Text } from 'react-native';
 import { APIProvider, Map } from '@vis.gl/react-google-maps';
+import { useNavigation } from '@react-navigation/native';
 import Markers from './Markers.web';
 import StationDetailsPanel from '@/components/StationDetailsPanel';
 import { StationData } from '@/hardcode/stationsData';
-
 
 export default function RiderMap() {
   const [stations, setStations] = useState<StationData[]>([]);
   const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
   const [hasReservedBike, setHasReservedBike] = useState(false);
   const { user } = useAuth();
+  const navigation = useNavigation();
 
   useEffect(() => {
     async function fetchStations() {
@@ -19,7 +20,6 @@ export default function RiderMap() {
         const response = await fetch('http://localhost:8080/api/stations');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
-        console.log("Fetched stations:", data);
         setStations(data);
       } catch (err) {
         console.error("Failed to fetch stations", err);
@@ -35,9 +35,10 @@ export default function RiderMap() {
     }
 
     try {
-      // Find available bike in station
-      const availableBike = station.docks?.find(dock => dock.bike && dock.bike.status === 'AVAILABLE')?.bike;
-      
+      const availableBike = station.docks?.find(
+        dock => dock.bike && dock.bike.status === 'AVAILABLE'
+      )?.bike;
+
       if (!availableBike) {
         Alert.alert('Error', 'No available bikes at this station');
         return;
@@ -52,7 +53,6 @@ export default function RiderMap() {
         Alert.alert('Success', 'Bike reserved successfully!');
         setHasReservedBike(true);
         setSelectedStation(null);
-        // Refresh stations to show updated availability
         const stationsResponse = await fetch('http://localhost:8080/api/stations');
         const updatedStations = await stationsResponse.json();
         setStations(updatedStations);
@@ -73,9 +73,7 @@ export default function RiderMap() {
     }
 
     try {
-      // Find an empty dock
       const emptyDock = station.docks?.find(dock => !dock.bike && dock.status === 'AVAILABLE');
-      
       if (!emptyDock) {
         Alert.alert('Error', 'No available docks at this station');
         return;
@@ -90,7 +88,6 @@ export default function RiderMap() {
         Alert.alert('Success', 'Bike returned successfully!');
         setHasReservedBike(false);
         setSelectedStation(null);
-        // Refresh stations to show updated availability
         const stationsResponse = await fetch('http://localhost:8080/api/stations');
         const updatedStations = await stationsResponse.json();
         setStations(updatedStations);
@@ -109,17 +106,13 @@ export default function RiderMap() {
       <APIProvider apiKey={'AIzaSyCXEnqnsX-Sl1DevG3W1N8BBg7D2MdZwsU'}>
         <Map
           style={styles.map}
-          defaultCenter={{
-            lat: 45.5017, // Montreal
-            lng: -73.5673
-          }}
+          defaultCenter={{ lat: 45.5017, lng: -73.5673 }}
           defaultZoom={13}
-          gestureHandling={'greedy'}
+          gestureHandling="greedy"
           disableDefaultUI={false}
-          mapId={'AIzaSyCXEnqnsX-Sl1DevG3W1N8BBg7D2MdZwsU'}
         >
-          <Markers 
-            stations={stations} 
+          <Markers
+            stations={stations}
             onMarkerPress={setSelectedStation}
             hasReservedBike={hasReservedBike}
           />
@@ -142,11 +135,21 @@ export default function RiderMap() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1 },
+  map: { width: '100%', height: '100%' },
+  switchButton: {
+    position: 'absolute',
+    bottom: 40,
+    right: 20,
+    backgroundColor: '#007bff',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    elevation: 5,
   },
-  map: {
-    width: '100%',
-    height: '100%',
+  switchButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
 });

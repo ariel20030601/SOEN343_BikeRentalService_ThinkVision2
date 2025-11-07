@@ -54,12 +54,12 @@ public class ReservationService {
         if (bike.getStatus() != BikeStatus.AVAILABLE)
             throw new IllegalStateException("Bike is not available");
 
-        // 🔹 Mark reserved
+        // Mark reserved
         bike.setStatus(BikeStatus.RESERVED);
         bike.setReservationExpiry(Instant.now().plusSeconds(EXPIRES_AFTER_MINUTES * 60));
         bikeRepo.save(bike);
 
-        // 🔹 Create reservation
+        // Create reservation
         Reservation res = new Reservation(
                 user,
                 bikeId,

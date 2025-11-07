@@ -1,39 +1,213 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import {APIProvider, Map} from '@vis.gl/react-google-maps';
-import { StationData } from '@/hardcode/stationsData';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, FlatList, Button, Alert } from 'react-native';
+import { APIProvider, Map } from '@vis.gl/react-google-maps';
 import Markers from './Markers.web';
 import StationDetailsPanel from '@/components/StationDetailsPanel';
 
 
+export type StationStatus = "EMPTY" | "OCCUPIED" | "FULL" | "OUT_OF_SERVICE";
+
+
+export interface StationData {
+  id: string;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  capacity: number;
+  availableBikes: number;
+  freeDocks: number;
+  status: StationStatus;
+  docks?: {
+    id: string;
+    name: string;
+    status: string;
+    bike?: {
+      id: string;
+      type: "STANDARD" | "E_BIKE";
+      status: string;
+    };
+  }[];
+}
+
 export default function MapWeb() {
+  const [stations, setStations] = useState<StationData[]>([]);
   const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
-  const [userRole] = useState<'rider' | 'operator'>('operator'); // TODO: Get from context
+  const [userRole] = useState<'rider' | 'operator'>('rider'); // TODO: Get from context
   const [hasReservedBike, setHasReservedBike] = useState(false);
+  const [reservedBikeId, setReservedBikeId] = useState<string | null>(null);
+  const { user } = useAuth();    
+  const operatorId = 2;
+  const [showDestinationModal, setShowDestinationModal] = useState(false);
+  const [moveBikeSource, setMoveBikeSource] = useState<{station: StationData, bikeId: string} | null>(null);
 
-  const handleReserveBike = (station: StationData) => {
-    console.log('Reserve bike at', station.title);
-    setHasReservedBike(true);
-    setSelectedStation(null);
-    // TODO: Implement actual reservation logic
+  useEffect(() => {
+    async function fetchStations() {
+      try {
+        console.log("operatorId:", operatorId);
+        const response = await fetch('http://localhost:8080/api/stations');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        console.log("Fetched stations:", data);
+        setStations(data);
+      } catch (err) {
+        console.error("Failed to fetch stations", err);
+      }
+    }
+    fetchStations();
+  }, []);
+
+
+// ...existing code...
+  const handleReserveBike = async (station: StationData) => {
+    // pick a bike from the station (first dock that has a bike)
+    const bikeDock = station.docks?.find(d => d.bike);
+    if (!bikeDock?.bike) {
+      Alert.alert('Error', 'No available bike to reserve at this station');
+      return;
+    }
+
+    // derive riderId from auth user (safe fallbacks)
+    const riderId = (user as any)?.id ?? (user as any)?.userId ?? (user as any)?.sub ?? 1;
+    const bikeId = bikeDock.bike.id;
+
+    const body = {
+      riderId,
+      stationId: station.id,
+      bikeId
+    };
+
+    try {
+      console.log('Reserving bike with body:', body);
+      const response = await fetch('http://localhost:8080/api/bikes/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Reserve response:', data);
+        setHasReservedBike(true);
+        setReservedBikeId(bikeId);
+        setSelectedStation(null);
+        Alert.alert('Success', 'Bike reserved successfully');
+      } else {
+        const errText = await response.text();
+        console.error('Reserve failed:', errText);
+        Alert.alert('Error', errText || 'Failed to reserve bike');
+      }
+    } catch (err) {
+      console.error('Reserve error:', err);
+      Alert.alert('Error', 'Failed to reserve bike');
+    }
   };
 
-  const handleReturnBike = (station: StationData) => {
-    console.log('Return bike to', station.title);
-    setHasReservedBike(false);
-    setSelectedStation(null);
-    // TODO: Implement actual return logic
+
+  const handleReturnBike = async (station: StationData) => {
+    // rider must have a reserved bike id
+    const bikeId = reservedBikeId;
+    if (!bikeId) {
+      Alert.alert('Error', 'No reserved bike to return');
+      return;
+    }
+
+    const riderId = (user as any)?.id ?? (user as any)?.userId ?? (user as any)?.sub ?? 1;
+
+    const body = {
+      riderId,
+      stationId: station.id,
+      bikeId
+    };
+
+    try {
+      console.log('Returning bike with body:', body);
+      const response = await fetch('http://localhost:8080/api/bikes/return', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Return response:', data);
+        setHasReservedBike(false);
+        setReservedBikeId(bikeId);
+        setReservedBikeId(null);
+        setSelectedStation(null);
+        Alert.alert('Success', 'Bike returned successfully');
+      } else {
+        const errText = await response.text();
+        console.error('Return failed:', errText);
+        Alert.alert('Error', errText || 'Failed to return bike');
+      }
+    } catch (err) {
+      console.error('Return error:', err);
+      Alert.alert('Error', 'Failed to return bike');
+    }
   };
 
+  // Show modal after clicking Move Bike
   const handleMoveBike = (station: StationData) => {
-    console.log('Move bike from', station.title);
-    // TODO: Navigate to destination picker or show modal
+    const dock13 = station.docks?.find(dock => dock.name === "Dock 13" && dock.bike);
+    if (!dock13?.bike) {
+      Alert.alert('Error', 'No bike found in Dock 13');
+      return;
+    }
+    setMoveBikeSource({ station, bikeId: dock13.bike.id });
+    setShowDestinationModal(true);
   };
 
-  const handleMaintenanceBike = (station: StationData, dockIndex: number) => {
-    console.log('Send to maintenance', station.title, dockIndex);
-    setSelectedStation(null);
-    // TODO: Implement maintenance logic
+  // Called after user selects destination station
+  const handleConfirmMoveBike = async (toStationId: string) => {
+    if (!moveBikeSource || !operatorId) return;
+    console.log('Moving bike:', {
+      operatorId,
+      fromStationId: moveBikeSource.station.id,
+      toStationId,
+      bikeId: moveBikeSource.bikeId
+    });
+    try {
+      const response = await fetch(
+        `http://localhost:8080/api/operator/move-bike?operatorId=${operatorId}&fromStationId=${moveBikeSource.station.id}&toStationId=${toStationId}&bikeId=${moveBikeSource.bikeId}`,
+        { method: 'POST' }
+      );
+      console.log('Move bike response:', response);
+      if (response.ok) {
+        Alert.alert('Success', 'Bike moved successfully!');
+      } else {
+        const errorText = await response.text();
+        Alert.alert('Error', errorText);
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Failed to move bike');
+    } finally {
+      setShowDestinationModal(false);
+      setMoveBikeSource(null);
+      setSelectedStation(null);
+    }
+  };
+
+  const handleMaintenanceBike = async (station: StationData, dockIndex: number) => {
+    const dock = station.docks?.[dockIndex];
+    if (!dock) return;
+    try {
+      const response = await fetch(
+        `http://localhost:8080/api/operator/toggle-dock?operatorId=${operatorId}&dockId=${dock.id}`,
+        { method: 'POST' }
+      );
+      if (response.ok) {
+        Alert.alert('🔧 Success', `Dock ${dock.name} maintenance toggled`);
+      } else {
+        const errorText = await response.text();
+        Alert.alert('Error', errorText);
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Failed to toggle dock maintenance');
+    }
   };
 
   return (
@@ -48,9 +222,9 @@ export default function MapWeb() {
           defaultZoom={13}
           gestureHandling={'greedy'}
           disableDefaultUI={false}
-          mapId={'AIzaSyCXEnqnsX-Sl1DevG3W1N8BBg7D2MdZwsU'} // Required for AdvancedMarker
+          mapId={'AIzaSyCXEnqnsX-Sl1DevG3W1N8BBg7D2MdZwsU'}
         >
-          <Markers onMarkerPress={setSelectedStation} />
+          <Markers stations={stations} onMarkerPress={setSelectedStation} />
         </Map>
       </APIProvider>
 
@@ -65,6 +239,33 @@ export default function MapWeb() {
         onMoveBike={handleMoveBike}
         onMaintenanceBike={handleMaintenanceBike}
       />
+
+      {/* Destination Station Modal */}
+      <Modal visible={showDestinationModal} animationType="slide" transparent>
+        <View style={{
+          flex: 1, justifyContent: 'center', alignItems: 'center',
+          backgroundColor: 'rgba(0,0,0,0.5)'
+        }}>
+          <View style={{
+            backgroundColor: 'white', padding: 20, borderRadius: 10, width: '80%'
+          }}>
+            <Text style={{ fontSize: 18, marginBottom: 10 }}>Select Destination Station</Text>
+            <FlatList
+              data={stations.filter(s => s.id !== moveBikeSource?.station.id)}
+              keyExtractor={item => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={{ padding: 12, borderBottomWidth: 1, borderColor: '#eee' }}
+                  onPress={() => handleConfirmMoveBike(item.id)}
+                >
+                  <Text>{item.name}</Text>
+                </TouchableOpacity>
+              )}
+            />
+            <Button title="Cancel" onPress={() => { setShowDestinationModal(false); setMoveBikeSource(null); }} />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -72,24 +273,9 @@ export default function MapWeb() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#E5E5E5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 8,
   },
-    map: {
-    flex: 1,
+  map: {
     width: '100%',
     height: '100%',
-  },
-  text: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  subtext: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 8,
   },
 });

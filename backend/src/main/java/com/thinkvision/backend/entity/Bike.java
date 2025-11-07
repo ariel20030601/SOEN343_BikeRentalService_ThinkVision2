@@ -1,4 +1,6 @@
 package com.thinkvision.backend.entity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,6 +27,7 @@ public class Bike {
 
     @OneToOne
     @JoinColumn(name = "dock_id")
+    @JsonIgnore
     private Dock dock;
 
     public Bike() {}

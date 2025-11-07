@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+
 import {
   View,
   Text,
@@ -8,8 +9,42 @@ import {
   Modal,
   Pressable,
 } from 'react-native';
-import { StationData } from '@/hardcode/stationsData';
 
+// Backend structure
+interface Dock {
+  id: string;
+  name: string;
+  status: 'OCCUPIED' | 'EMPTY' | 'OUT_OF_SERVICE';
+  bike?: {
+    id: string;
+    type: 'STANDARD' | 'E_BIKE';
+    status: 'AVAILABLE' | 'RESERVED' | 'ON_TRIP' | 'MAINTENANCE';
+  };
+}
+
+export type StationStatus = "EMPTY" | "OCCUPIED" | "FULL" | "OUT_OF_SERVICE";
+
+export interface StationData {
+  id: string;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  capacity: number;
+  availableBikes: number;
+  freeDocks: number;
+  status: StationStatus;
+  docks?: {
+    id: string;
+    name: string;
+    status: string;
+    bike?: {
+      id: string;
+      type: "STANDARD" | "E_BIKE";
+      status: string;
+    };
+  }[];
+}
 interface StationDetailsPanelProps {
   visible: boolean;
   station: StationData | null;
@@ -37,38 +72,40 @@ export default function StationDetailsPanel({
 
   if (!station) return null;
 
-  const bikesAvailable = parseInt(station.bikes) + parseInt(station.ebikes);
-  const freeDocks = parseInt(station.docks);
+  // --- Compute bikes and e-bikes dynamically from backend data ---
+  let standardCount = 0;
+  let eBikeCount = 0;
+  const docksFromBackend = station.docks || [];
+
+  docksFromBackend.forEach((dock) => {
+    if (dock.bike) {
+      if (dock.bike.type === 'E_BIKE') eBikeCount++;
+      else standardCount++;
+    }
+  });
+
+  const bikesAvailable = standardCount + eBikeCount;
+  const freeDocks = station.freeDocks ?? (station.capacity - bikesAvailable);
   const fullnessPercent = (bikesAvailable / station.capacity) * 100;
-  const isOutOfService = station.status !== 'operational';
+  const isOutOfService = station.status === 'OUT_OF_SERVICE';
 
-  // Generate dock grid data (mock for now - you'll need actual dock data)
-  const generateDocks = () => {
-    const docks = [];
-    const totalBikes = parseInt(station.bikes);
-    const totalEbikes = parseInt(station.ebikes);
-    
-    // Add standard bikes
-    for (let i = 0; i < totalBikes; i++) {
-      docks.push({ id: i, type: 'standard', occupied: true });
-    }
-    
-    // Add e-bikes
-    for (let i = totalBikes; i < totalBikes + totalEbikes; i++) {
-      docks.push({ id: i, type: 'ebike', occupied: true });
-    }
-    
-    // Add empty docks
-    for (let i = totalBikes + totalEbikes; i < station.capacity; i++) {
-      docks.push({ id: i, type: null, occupied: false });
-    }
-    
-    return docks;
-  };
-
-  const docks = generateDocks();
+  // --- Generate Dock Grid for visualization ---
+  const docks = docksFromBackend.length
+    ? docksFromBackend.map((dock, index) => ({
+        id: dock.id,
+        type: dock.bike ? (dock.bike.type === 'E_BIKE' ? 'ebike' : 'standard') : null,
+        occupied: dock.status === 'OCCUPIED',
+        outOfService: dock.status === 'OUT_OF_SERVICE',
+      }))
+    : Array.from({ length: station.capacity }, (_, i) => ({
+        id: `dock-${i}`,
+        type: null,
+        occupied: i < bikesAvailable,
+        outOfService: false,
+      }));
 
   const getStatusColor = () => {
+    if (isOutOfService) return '#9E9E9E'; // gray for OOS
     if (fullnessPercent === 0 || fullnessPercent === 100) return '#F44336';
     if (fullnessPercent < 25 || fullnessPercent > 85) return '#FFC107';
     return '#4CAF50';
@@ -79,7 +116,7 @@ export default function StationDetailsPanel({
   const canMove = bikesAvailable > 0 && !isOutOfService;
 
   const handleDockPress = (dockIndex: number) => {
-    if (userRole === 'operator' && docks[dockIndex].occupied) {
+    if (docks[dockIndex].occupied) {
       setSelectedDock(dockIndex);
     }
   };
@@ -96,9 +133,9 @@ export default function StationDetailsPanel({
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Text style={styles.title}>{station.title}</Text>
+              <Text style={styles.title}>{station.name}</Text>
               <View style={[styles.statusBadge, { backgroundColor: getStatusColor() }]}>
-                <Text style={styles.statusText}>{station.status}</Text>
+                <Text style={styles.statusText}>{station.status.toLowerCase()}</Text>
               </View>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -136,11 +173,15 @@ export default function StationDetailsPanel({
                   key={dock.id}
                   style={[
                     styles.dockCell,
-                    dock.occupied ? styles.dockOccupied : styles.dockEmpty,
+                    dock.outOfService
+                      ? { backgroundColor: '#B0BEC5', borderColor: '#78909C' }
+                      : dock.occupied
+                      ? styles.dockOccupied
+                      : styles.dockEmpty,
                     selectedDock === index && styles.dockSelected,
                   ]}
                   onPress={() => handleDockPress(index)}
-                  disabled={!dock.occupied || userRole === 'rider'}
+                  disabled={!dock.occupied}
                 >
                   <Text style={styles.dockNumber}>{index + 1}</Text>
                   {dock.type === 'ebike' && (
@@ -197,7 +238,7 @@ export default function StationDetailsPanel({
               {userRole === 'operator' && (
                 <>
                   <TouchableOpacity
-                    style={[styles.actionButton, styles.primaryButton, !canMove && styles.disabledButton]}
+                    style={[styles.actionButton, styles.primaryButton, (!canMove || selectedDock === null) && styles.disabledButton]}
                     onPress={() => onMoveBike?.(station)}
                     disabled={!canMove || selectedDock === null}
                   >

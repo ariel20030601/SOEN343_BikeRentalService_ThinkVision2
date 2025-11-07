@@ -18,6 +18,11 @@ spring:
         ddl-auto: update
         default_schema: bibixidb
 
+payment:
+  base-url: https://api.paymentprovider.com
+  api-key: your-payment-api-key
+  timeout-ms: 5000
+
 app:
   jwt:
     secret: QWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTIzNDU2Nzg5MDEyMzQ1Ng==

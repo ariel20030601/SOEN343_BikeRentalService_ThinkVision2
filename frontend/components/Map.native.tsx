@@ -49,7 +49,7 @@ export default function MapNative() {
         showsUserLocation
         showsMyLocationButton
       >
-      <Markers onMarkerPress={setSelectedStation} />
+        <Markers onMarkerPress={setSelectedStation} />
       </MapView>
 
       <StationDetailsPanel

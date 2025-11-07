@@ -1,3 +1,5 @@
+export type StationStatus = "EMPTY" | "OCCUPIED" | "FULL" | "OUT_OF_SERVICE";
+
 export interface StationData {
   id: string;
   name: string;

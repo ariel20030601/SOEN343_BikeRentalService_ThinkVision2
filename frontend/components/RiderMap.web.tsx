@@ -4,30 +4,8 @@ import { View, StyleSheet, Alert } from 'react-native';
 import { APIProvider, Map } from '@vis.gl/react-google-maps';
 import Markers from './Markers.web';
 import StationDetailsPanel from '@/components/StationDetailsPanel';
+import { StationData } from '@/hardcode/stationsData';
 
-export type StationStatus = "EMPTY" | "OCCUPIED" | "FULL" | "OUT_OF_SERVICE";
-
-export interface StationData {
-  id: string;
-  name: string;
-  address: string;
-  latitude: number;
-  longitude: number;
-  capacity: number;
-  availableBikes: number;
-  freeDocks: number;
-  status: StationStatus;
-  docks?: {
-    id: string;
-    name: string;
-    status: string;
-    bike?: {
-      id: string;
-      type: "STANDARD" | "E_BIKE";
-      status: string;
-    };
-  }[];
-}
 
 export default function RiderMap() {
   const [stations, setStations] = useState<StationData[]>([]);
@@ -143,7 +121,6 @@ export default function RiderMap() {
           <Markers 
             stations={stations} 
             onMarkerPress={setSelectedStation}
-            userRole="rider"
             hasReservedBike={hasReservedBike}
           />
         </Map>

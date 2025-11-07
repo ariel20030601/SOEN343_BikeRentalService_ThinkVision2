@@ -4,30 +4,7 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, FlatList, Button, Aler
 import { APIProvider, Map } from '@vis.gl/react-google-maps';
 import Markers from './Markers.web';
 import StationDetailsPanel from '@/components/StationDetailsPanel';
-
-export type StationStatus = "EMPTY" | "OCCUPIED" | "FULL" | "OUT_OF_SERVICE";
-
-export interface StationData {
-  id: string;
-  name: string;
-  address: string;
-  latitude: number;
-  longitude: number;
-  capacity: number;
-  availableBikes: number;
-  freeDocks: number;
-  status: StationStatus;
-  docks?: {
-    id: string;
-    name: string;
-    status: string;
-    bike?: {
-      id: string;
-      type: "STANDARD" | "E_BIKE";
-      status: string;
-    };
-  }[];
-}
+import { StationData } from '@/hardcode/stationsData';
 
 export default function OperatorMap() {
   const [stations, setStations] = useState<StationData[]>([]);
@@ -140,7 +117,6 @@ export default function OperatorMap() {
           <Markers 
             stations={stations} 
             onMarkerPress={setSelectedStation}
-            userRole="operator"
           />
         </Map>
       </APIProvider>

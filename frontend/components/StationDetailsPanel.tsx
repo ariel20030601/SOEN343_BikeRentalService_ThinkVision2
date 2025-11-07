@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { StationData } from '@/hardcode/stationsData';
 
 import {
   View,
@@ -22,29 +23,6 @@ interface Dock {
   };
 }
 
-export type StationStatus = "EMPTY" | "OCCUPIED" | "FULL" | "OUT_OF_SERVICE";
-
-export interface StationData {
-  id: string;
-  name: string;
-  address: string;
-  latitude: number;
-  longitude: number;
-  capacity: number;
-  availableBikes: number;
-  freeDocks: number;
-  status: StationStatus;
-  docks?: {
-    id: string;
-    name: string;
-    status: string;
-    bike?: {
-      id: string;
-      type: "STANDARD" | "E_BIKE";
-      status: string;
-    };
-  }[];
-}
 interface StationDetailsPanelProps {
   visible: boolean;
   station: StationData | null;

@@ -30,38 +30,15 @@ export default function OperatorMap() {
     fetchStations();
   }, []);
 
-  // Show modal after clicking Move Bike
-  const handleMoveBike = (station: StationData) => {
-    const dock13 = station.docks?.find(dock => dock.name === "Dock 13" && dock.bike);
-    if (!dock13?.bike) {
-      Alert.alert('Error', 'No bike found in Dock 13');
-      return;
-    }
-    setMoveBikeSource({ station, bikeId: dock13.bike.id });
-    setShowDestinationModal(true);
-  };
-
-  // Called after user selects destination station
-  const handleConfirmMoveBike = async (toStationId: string) => {
-    if (!moveBikeSource || !operatorId) return;
-    console.log('Moving bike:', {
-      operatorId,
-      fromStationId: moveBikeSource.station.id,
-      toStationId,
-      bikeId: moveBikeSource.bikeId
-    });
+  const handleMoveBike = async (station: StationData) => {
+    if (!station || !selectedStation) return;
     try {
       const response = await fetch(
-        `http://localhost:8080/api/operator/move-bike?operatorId=${operatorId}&fromStationId=${moveBikeSource.station.id}&toStationId=${toStationId}&bikeId=${moveBikeSource.bikeId}`,
+        `http://localhost:8080/api/operator/move-bike?operatorId=${operatorId}&fromStationId=${station.id}&toStationId=S3&bikeId=${station.docks?.[0].bike?.id}`,
         { method: 'POST' }
       );
-      console.log('Move bike response:', response);
       if (response.ok) {
         Alert.alert('Success', 'Bike moved successfully!');
-        // Refresh stations
-        const stationsResponse = await fetch('http://localhost:8080/api/stations');
-        const updatedStations = await stationsResponse.json();
-        setStations(updatedStations);
       } else {
         const errorText = await response.text();
         Alert.alert('Error', errorText);
@@ -69,10 +46,6 @@ export default function OperatorMap() {
     } catch (err) {
       console.error(err);
       Alert.alert('Error', 'Failed to move bike');
-    } finally {
-      setShowDestinationModal(false);
-      setMoveBikeSource(null);
-      setSelectedStation(null);
     }
   };
 
@@ -86,13 +59,9 @@ export default function OperatorMap() {
       );
       if (response.ok) {
         Alert.alert('🔧 Success', `Dock ${dock.name} maintenance toggled`);
-        // Refresh stations
-        const stationsResponse = await fetch('http://localhost:8080/api/stations');
-        const updatedStations = await stationsResponse.json();
-        setStations(updatedStations);
       } else {
         const errorText = await response.text();
-        Alert.alert('Error', errorText);
+        Alert.alert('❌ Error', errorText);
       }
     } catch (err) {
       console.error(err);
@@ -112,53 +81,23 @@ export default function OperatorMap() {
           defaultZoom={13}
           gestureHandling={'greedy'}
           disableDefaultUI={false}
-          mapId={'AIzaSyCXEnqnsX-Sl1DevG3W1N8BBg7D2MdZwsU'}
+          mapId={'AIzaSyCXEnqnsX-Sl1DevG3W1N8BBg7D2MdZwsU'} // Required for AdvancedMarker
         >
-          <Markers 
-            stations={stations} 
-            onMarkerPress={setSelectedStation}
-          />
+          <Markers onMarkerPress={setSelectedStation} />
         </Map>
       </APIProvider>
 
       <StationDetailsPanel
         visible={selectedStation !== null}
         station={selectedStation}
-        userRole="operator"
-        hasReservedBike={false}
+        userRole={userRole}
+        hasReservedBike={hasReservedBike}
         onClose={() => setSelectedStation(null)}
-        onReserveBike={() => {}}
-        onReturnBike={() => {}}
+        onReserveBike={handleReserveBike}
+        onReturnBike={handleReturnBike}
         onMoveBike={handleMoveBike}
         onMaintenanceBike={handleMaintenanceBike}
       />
-
-      {/* Destination Station Modal */}
-      <Modal visible={showDestinationModal} animationType="slide" transparent>
-        <View style={{
-          flex: 1, justifyContent: 'center', alignItems: 'center',
-          backgroundColor: 'rgba(0,0,0,0.5)'
-        }}>
-          <View style={{
-            backgroundColor: 'white', padding: 20, borderRadius: 10, width: '80%'
-          }}>
-            <Text style={{ fontSize: 18, marginBottom: 10 }}>Select Destination Station</Text>
-            <FlatList
-              data={stations.filter(s => s.id !== moveBikeSource?.station.id)}
-              keyExtractor={item => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={{ padding: 12, borderBottomWidth: 1, borderColor: '#eee' }}
-                  onPress={() => handleConfirmMoveBike(item.id)}
-                >
-                  <Text>{item.name}</Text>
-                </TouchableOpacity>
-              )}
-            />
-            <Button title="Cancel" onPress={() => { setShowDestinationModal(false); setMoveBikeSource(null); }} />
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }

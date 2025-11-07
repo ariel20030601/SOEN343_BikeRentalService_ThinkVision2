@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { View, StyleSheet, Alert, TouchableOpacity, Text } from 'react-native';
+import { View, StyleSheet} from 'react-native';
 import { APIProvider, Map } from '@vis.gl/react-google-maps';
-import { useNavigation } from '@react-navigation/native';
 import Markers from './Markers.web';
 import StationDetailsPanel from '@/components/StationDetailsPanel';
 import { StationData } from '@/hardcode/stationsData';
@@ -12,7 +11,7 @@ export default function RiderMap() {
   const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
   const [hasReservedBike, setHasReservedBike] = useState(false);
   const { user } = useAuth();
-  const navigation = useNavigation();
+
 
   useEffect(() => {
     async function fetchStations() {
@@ -30,7 +29,7 @@ export default function RiderMap() {
 
   const handleReserveBike = async (station: StationData) => {
     if (!user?.id) {
-      Alert.alert('Error', 'User not authenticated');
+      console.log('User not authenticated');
       return;
     }
 
@@ -40,7 +39,7 @@ export default function RiderMap() {
       )?.bike;
 
       if (!availableBike) {
-        Alert.alert('Error', 'No available bikes at this station');
+        console.log('No available bikes at this station');
         return;
       }
 
@@ -50,7 +49,7 @@ export default function RiderMap() {
       );
 
       if (response.ok) {
-        Alert.alert('Success', 'Bike reserved successfully!');
+        console.log('Bike reserved successfully!');
         setHasReservedBike(true);
         setSelectedStation(null);
         const stationsResponse = await fetch('http://localhost:8080/api/stations');
@@ -58,24 +57,23 @@ export default function RiderMap() {
         setStations(updatedStations);
       } else {
         const errorText = await response.text();
-        Alert.alert('Error', errorText);
+        console.log('Reserve bike failed:', errorText);
       }
     } catch (err) {
       console.error('Reserve bike error:', err);
-      Alert.alert('Error', 'Failed to reserve bike');
     }
   };
 
   const handleReturnBike = async (station: StationData) => {
     if (!user?.id) {
-      Alert.alert('Error', 'User not authenticated');
+      console.log('User not authenticated');
       return;
     }
 
     try {
       const emptyDock = station.docks?.find(dock => !dock.bike && dock.status === 'AVAILABLE');
       if (!emptyDock) {
-        Alert.alert('Error', 'No available docks at this station');
+        console.log('No available docks at this station');
         return;
       }
 
@@ -85,7 +83,7 @@ export default function RiderMap() {
       );
 
       if (response.ok) {
-        Alert.alert('Success', 'Bike returned successfully!');
+        console.log('Bike returned successfully!');
         setHasReservedBike(false);
         setSelectedStation(null);
         const stationsResponse = await fetch('http://localhost:8080/api/stations');
@@ -93,11 +91,10 @@ export default function RiderMap() {
         setStations(updatedStations);
       } else {
         const errorText = await response.text();
-        Alert.alert('Error', errorText);
+        console.log('Return bike failed:', errorText);
       }
     } catch (err) {
       console.error('Return bike error:', err);
-      Alert.alert('Error', 'Failed to return bike');
     }
   };
 
@@ -114,7 +111,6 @@ export default function RiderMap() {
           <Markers
             stations={stations}
             onMarkerPress={setSelectedStation}
-            hasReservedBike={hasReservedBike}
           />
         </Map>
       </APIProvider>
@@ -127,8 +123,6 @@ export default function RiderMap() {
         onClose={() => setSelectedStation(null)}
         onReserveBike={handleReserveBike}
         onReturnBike={handleReturnBike}
-        onMoveBike={() => {}}
-        onMaintenanceBike={() => {}}
       />
     </View>
   );

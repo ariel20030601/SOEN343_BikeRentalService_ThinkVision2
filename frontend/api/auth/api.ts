@@ -1,5 +1,6 @@
 // Define the base API URL (adjust as needed)
 const API_URL = "http://localhost:8080/users";
+const PRC_API_URL = "http://localhost:8080/api/prc";
 
 // 1️Define interfaces for data types
 export interface RegisterData {
@@ -103,6 +104,42 @@ export async function fetchUserMe(token: string): Promise<User> {
     }
 
     return response.json();
+}
+
+// Fetch all users (requires valid JWT). Use sparingly; filter client-side for current user.
+export async function fetchAllUsers(token: string): Promise<User[]> {
+  const res = await fetch(`${API_URL}/all`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `Failed to fetch users (${res.status})`);
+  }
+  return res.json();
+}
+
+// ---------- Billing History ----------
+export type TripSummary = {
+  tripId: number;
+  bikeType: string;
+  startStationName: string;
+  endStationName: string;
+  startTime: number; // epoch millis
+  endTime: number;   // epoch millis
+  durationMinutes: number;
+  cost: number;
+};
+
+export async function fetchBillingHistory(userId: number): Promise<TripSummary[]> {
+  const res = await fetch(`${PRC_API_URL}/history/${userId}`, {
+    method: "GET",
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `Failed to fetch history (${res.status})`);
+  }
+  return res.json();
 }
 
 // Define the base URL for bikes (adjust as needed)

@@ -17,6 +17,7 @@ interface StationDetailsPanelProps {
   hasReservedBike?: boolean;
   onClose: () => void;
   onReserveBike?: (station: StationData) => void;
+  onCheckoutBike?: (station: StationData) => void;
   onReturnBike?: (station: StationData) => void;
   onMoveBike?: (station: StationData) => void;
   onMaintenanceBike?: (station: StationData, dockIndex: number) => void;
@@ -29,6 +30,7 @@ export default function StationDetailsPanel({
   hasReservedBike = false,
   onClose,
   onReserveBike,
+  onCheckoutBike,
   onReturnBike,
   onMoveBike,
   onMaintenanceBike,
@@ -77,11 +79,10 @@ export default function StationDetailsPanel({
   const canReserve = !hasReservedBike && bikesAvailable > 0 && !isOutOfService;
   const canReturn = hasReservedBike && freeDocks > 0 && !isOutOfService;
   const canMove = bikesAvailable > 0 && !isOutOfService;
+  const canCheckout = bikesAvailable > 0 && !isOutOfService;
 
   const handleDockPress = (dockIndex: number) => {
-    if (userRole === 'operator' && docks[dockIndex].occupied) {
-      setSelectedDock(dockIndex);
-    }
+    setSelectedDock(dockIndex);
   };
 
   return (
@@ -140,7 +141,6 @@ export default function StationDetailsPanel({
                     selectedDock === index && styles.dockSelected,
                   ]}
                   onPress={() => handleDockPress(index)}
-                  disabled={!dock.occupied || userRole === 'rider'}
                 >
                   <Text style={styles.dockNumber}>{index + 1}</Text>
                   {dock.type === 'ebike' && (
@@ -168,22 +168,77 @@ export default function StationDetailsPanel({
             <View style={styles.actionsContainer}>
               {userRole === 'rider' && (
                 <>
+                  {/* Reserve Bike Button */}
                   <TouchableOpacity
-                    style={[styles.actionButton, styles.primaryButton, !canReserve && styles.disabledButton]}
-                    onPress={() => onReserveBike?.(station)}
-                    disabled={!canReserve}
+                    style={[
+                      styles.actionButton,
+                      styles.primaryButton,
+                      (!canReserve || selectedDock === null || !docks[selectedDock].occupied) && styles.disabledButton,
+                    ]}
+                    onPress={() => {
+                      if (selectedDock !== null && docks[selectedDock].occupied) {
+                        onReserveBike?.(station);
+                        setSelectedDock(null);
+                      }
+                    }}
+                    disabled={!canReserve || selectedDock === null || !docks[selectedDock].occupied}
                   >
                     <Text style={styles.buttonText}>
-                      {hasReservedBike ? 'Already Have Bike' : 'Reserve Bike'}
+                      {selectedDock !== null
+                        ? docks[selectedDock].occupied
+                          ? `Reserve Bike at Dock ${selectedDock + 1}`
+                          : 'Select an occupied dock'
+                        : 'Select a bike to reserve'}
                     </Text>
                   </TouchableOpacity>
 
+                  {/* Checkout Bike Button */}
                   <TouchableOpacity
-                    style={[styles.actionButton, styles.secondaryButton, !canReturn && styles.disabledButton]}
-                    onPress={() => onReturnBike?.(station)}
-                    disabled={!canReturn}
+                    style={[
+                      styles.actionButton,
+                      styles.warningButton,
+                      !canCheckout && styles.disabledButton,
+                    ]}
+                    onPress={() => {
+                      if (canCheckout) {
+                        onCheckoutBike?.(station);
+                        setSelectedDock(null);
+                        console.log(`Checked out a bike from ${station.title}`);
+                      }
+                    }}
+                    disabled={!canCheckout}
                   >
-                    <Text style={styles.buttonText}>Return Bike</Text>
+                    <Text style={styles.buttonText}>
+                      {selectedDock !== null
+                        ? docks[selectedDock].occupied
+                          ? `Checkout Bike at Dock ${selectedDock + 1}`
+                          : 'Select an occupied dock'
+                        : 'Select a bike to checkout'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Return Bike Button */}
+                  <TouchableOpacity
+                    style={[
+                      styles.actionButton,
+                      styles.secondaryButton,
+                      (!canReturn || selectedDock === null || docks[selectedDock].occupied) && styles.disabledButton,
+                    ]}
+                    onPress={() => {
+                      if (selectedDock !== null && !docks[selectedDock].occupied) {
+                        onReturnBike?.(station);
+                        setSelectedDock(null);
+                      }
+                    }}
+                    disabled={!canReturn || selectedDock === null || docks[selectedDock].occupied}
+                  >
+                    <Text style={styles.buttonText}>
+                      {selectedDock !== null
+                        ? !docks[selectedDock].occupied
+                          ? `Return Bike to Dock ${selectedDock + 1}`
+                          : 'Select an empty dock'
+                        : 'Select a dock to return'}
+                    </Text>
                   </TouchableOpacity>
 
                   {!canReturn && hasReservedBike && freeDocks === 0 && (

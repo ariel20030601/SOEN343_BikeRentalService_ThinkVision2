@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import {APIProvider, Map} from '@vis.gl/react-google-maps';
 import { StationData } from '@/hardcode/stationsData';
 import Markers from './Markers.web';
@@ -8,19 +8,38 @@ import StationDetailsPanel from '@/components/StationDetailsPanel';
 
 export default function MapWeb() {
   const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
-  const [userRole] = useState<'rider' | 'operator'>('operator'); // TODO: Get from context
+  const [userRole] = useState<'rider' | 'operator'>('rider'); // TODO: Get from context
   const [hasReservedBike, setHasReservedBike] = useState(false);
+  const [hasCheckoutBike, setHasCheckoutBike] = useState(false);
+  const [rentalStation, setRentalStation] = useState<StationData | null>(null);
+  const [hasActiveRental, setHasActiveRental] = useState(false);
+
 
   const handleReserveBike = (station: StationData) => {
     console.log('Reserve bike at', station.title);
     setHasReservedBike(true);
+    setHasActiveRental(true);
+    setRentalStation(station);
     setSelectedStation(null);
     // TODO: Implement actual reservation logic
   };
 
+  const handleCheckoutBike = (station: StationData) => {
+    console.log('Checkout bike at', station.title);
+    setHasCheckoutBike(true);
+    setHasActiveRental(true);
+    setRentalStation(station);
+    setSelectedStation(null);
+    // TODO: Implement actual checkout logic
+  }
+
   const handleReturnBike = (station: StationData) => {
+    if (!hasActiveRental || !rentalStation) return;
+    console.log(`Ride started from: ${rentalStation.title}`);
     console.log('Return bike to', station.title);
+    setHasActiveRental(false);
     setHasReservedBike(false);
+    setRentalStation(null);
     setSelectedStation(null);
     // TODO: Implement actual return logic
   };
@@ -62,6 +81,7 @@ export default function MapWeb() {
         onClose={() => setSelectedStation(null)}
         onReserveBike={handleReserveBike}
         onReturnBike={handleReturnBike}
+        onCheckoutBike={handleCheckoutBike}
         onMoveBike={handleMoveBike}
         onMaintenanceBike={handleMaintenanceBike}
       />

@@ -34,8 +34,9 @@ export interface StationData {
 export default function MapWeb() {
   const [stations, setStations] = useState<StationData[]>([]);
   const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
-  const [userRole] = useState<'rider' | 'operator'>('operator'); // TODO: Get from context
+  const [userRole] = useState<'rider' | 'operator'>('rider'); // TODO: Get from context
   const [hasReservedBike, setHasReservedBike] = useState(false);
+  const [reservedBikeId, setReservedBikeId] = useState<string | null>(null);
   const { user } = useAuth();    
   const operatorId = 2;
   const [showDestinationModal, setShowDestinationModal] = useState(false);
@@ -58,18 +59,93 @@ export default function MapWeb() {
   }, []);
 
 
-  const handleReserveBike = (station: StationData) => {
-    console.log('Reserve bike at', station.name);
-    setHasReservedBike(true);
-    setSelectedStation(null);
-    // TODO: Implement actual reservation logic
+// ...existing code...
+  const handleReserveBike = async (station: StationData) => {
+    // pick a bike from the station (first dock that has a bike)
+    const bikeDock = station.docks?.find(d => d.bike);
+    if (!bikeDock?.bike) {
+      Alert.alert('Error', 'No available bike to reserve at this station');
+      return;
+    }
+
+    // derive riderId from auth user (safe fallbacks)
+    const riderId = (user as any)?.id ?? (user as any)?.userId ?? (user as any)?.sub ?? 1;
+    const bikeId = bikeDock.bike.id;
+
+    const body = {
+      riderId,
+      stationId: station.id,
+      bikeId
+    };
+
+    try {
+      console.log('Reserving bike with body:', body);
+      const response = await fetch('http://localhost:8080/api/bikes/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Reserve response:', data);
+        setHasReservedBike(true);
+        setReservedBikeId(bikeId);
+        setSelectedStation(null);
+        Alert.alert('Success', 'Bike reserved successfully');
+      } else {
+        const errText = await response.text();
+        console.error('Reserve failed:', errText);
+        Alert.alert('Error', errText || 'Failed to reserve bike');
+      }
+    } catch (err) {
+      console.error('Reserve error:', err);
+      Alert.alert('Error', 'Failed to reserve bike');
+    }
   };
 
-  const handleReturnBike = (station: StationData) => {
-    console.log('Return bike to', station.name);
-    setHasReservedBike(false);
-    setSelectedStation(null);
-    // TODO: Implement actual return logic
+
+  const handleReturnBike = async (station: StationData) => {
+    // rider must have a reserved bike id
+    const bikeId = reservedBikeId;
+    if (!bikeId) {
+      Alert.alert('Error', 'No reserved bike to return');
+      return;
+    }
+
+    const riderId = (user as any)?.id ?? (user as any)?.userId ?? (user as any)?.sub ?? 1;
+
+    const body = {
+      riderId,
+      stationId: station.id,
+      bikeId
+    };
+
+    try {
+      console.log('Returning bike with body:', body);
+      const response = await fetch('http://localhost:8080/api/bikes/return', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Return response:', data);
+        setHasReservedBike(false);
+        setReservedBikeId(bikeId);
+        setReservedBikeId(null);
+        setSelectedStation(null);
+        Alert.alert('Success', 'Bike returned successfully');
+      } else {
+        const errText = await response.text();
+        console.error('Return failed:', errText);
+        Alert.alert('Error', errText || 'Failed to return bike');
+      }
+    } catch (err) {
+      console.error('Return error:', err);
+      Alert.alert('Error', 'Failed to return bike');
+    }
   };
 
   // Show modal after clicking Move Bike

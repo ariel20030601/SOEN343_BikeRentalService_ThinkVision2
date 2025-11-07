@@ -116,7 +116,7 @@ export default function StationDetailsPanel({
   const canMove = bikesAvailable > 0 && !isOutOfService;
 
   const handleDockPress = (dockIndex: number) => {
-    if (userRole === 'operator' && docks[dockIndex].occupied) {
+    if (docks[dockIndex].occupied) {
       setSelectedDock(dockIndex);
     }
   };
@@ -181,7 +181,7 @@ export default function StationDetailsPanel({
                     selectedDock === index && styles.dockSelected,
                   ]}
                   onPress={() => handleDockPress(index)}
-                  disabled={!dock.occupied || userRole === 'rider'}
+                  disabled={!dock.occupied}
                 >
                   <Text style={styles.dockNumber}>{index + 1}</Text>
                   {dock.type === 'ebike' && (

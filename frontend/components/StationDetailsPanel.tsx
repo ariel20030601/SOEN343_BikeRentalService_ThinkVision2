@@ -55,7 +55,7 @@ interface StationDetailsPanelProps {
   onReserveBike?: (station: StationData) => void;
   onCheckoutBike?: (station: StationData) => void;
   onReturnBike?: (station: StationData) => void;
-  onMoveBike?: (station: StationData) => void;
+  onMoveBike?: (station: StationData, dockIndex: number) => void;
   onMaintenanceBike?: (station: StationData, dockIndex: number) => void;
 }
 
@@ -254,7 +254,7 @@ export default function StationDetailsPanel({
                 <>
                   <TouchableOpacity
                     style={[styles.actionButton, styles.primaryButton, (!canMove || selectedDock === null) && styles.disabledButton]}
-                    onPress={() => onMoveBike?.(station)}
+                    onPress={() => selectedDock !== null && onMoveBike?.(station, selectedDock)}
                     disabled={!canMove || selectedDock === null}
                   >
                     <Text style={styles.buttonText}>

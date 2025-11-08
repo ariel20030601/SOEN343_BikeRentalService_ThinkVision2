@@ -5,7 +5,6 @@ import { APIProvider, Map } from '@vis.gl/react-google-maps';
 import Markers from './Markers.web';
 import StationDetailsPanel from '@/components/StationDetailsPanel';
 
-
 export type StationStatus = "EMPTY" | "OCCUPIED" | "FULL" | "OUT_OF_SERVICE";
 
 
@@ -193,13 +192,13 @@ export default function MapWeb() {
   };
 
   // Show modal after clicking Move Bike
-  const handleMoveBike = (station: StationData) => {
-    const dock13 = station.docks?.find(dock => dock.name === "Dock 13" && dock.bike);
-    if (!dock13?.bike) {
+  const handleMoveBike = (station: StationData, dockIndex: number) => {
+    const dock = station.docks?.[dockIndex];
+    if (!dock?.bike) {
       Alert.alert('Error', 'No bike found in Dock 13');
       return;
     }
-    setMoveBikeSource({ station, bikeId: dock13.bike.id });
+    setMoveBikeSource({ station, bikeId: dock.bike.id });
     setShowDestinationModal(true);
   };
 
@@ -266,7 +265,7 @@ export default function MapWeb() {
           defaultZoom={13}
           gestureHandling={'greedy'}
           disableDefaultUI={false}
-          mapId={'AIzaSyCXEnqnsX-Sl1DevG3W1N8BBg7D2MdZwsU'}
+          mapId={'ceb9e4d79f5cb872a4f0b0bd'}
         >
           <Markers stations={stations} onMarkerPress={setSelectedStation} />
         </Map>

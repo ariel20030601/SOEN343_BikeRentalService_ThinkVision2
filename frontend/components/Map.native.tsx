@@ -3,7 +3,7 @@ import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import Markers from './Markers.native';
 import StationDetailsPanel from '@/components/StationDetailsPanel';
 import { View, StyleSheet } from 'react-native';
-import { StationData } from '@/hardcode/stationsData';
+import { StationData } from '@/hardcode/MapStyle';
 
 export default function MapNative() {
   const [selectedStation, setSelectedStation] = useState<StationData | null>(null);

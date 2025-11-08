@@ -1,5 +1,5 @@
 import { Marker } from 'react-native-maps';
-import { STATIONS_DATA, StationData } from '@/hardcode/stationsData';
+import { STATIONS_DATA, StationData } from '@/hardcode/MapStyle';
 
 interface MarkersProps {
   onMarkerPress: (station: StationData) => void;

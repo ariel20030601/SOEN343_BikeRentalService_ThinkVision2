@@ -1,6 +1,7 @@
 import React from 'react';
 import { AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
 
+export type StationStatus = "EMPTY" | "OCCUPIED" | "FULL" | "OUT_OF_SERVICE";
 
 export interface StationData {
   id: string;
@@ -11,7 +12,7 @@ export interface StationData {
   capacity: number;
   availableBikes: number;
   freeDocks: number;
-  status: string;
+  status: StationStatus;
   docks?: {
     id: string;
     name: string;

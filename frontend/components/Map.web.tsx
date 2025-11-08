@@ -36,6 +36,8 @@ export default function MapWeb() {
   const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
   const [userRole] = useState<'rider' | 'operator'>('rider'); // TODO: Get from context
   const [hasReservedBike, setHasReservedBike] = useState(false);
+  const [hasCheckoutBike, setHasCheckoutBike] = useState(false);
+  const [checkoutBikeId, setCheckoutBikeId] = useState<string | null>(null);
   const [reservedBikeId, setReservedBikeId] = useState<string | null>(null);
   const { user } = useAuth();    
   const operatorId = 2;
@@ -80,7 +82,7 @@ export default function MapWeb() {
 
     try {
       console.log('Reserving bike with body:', body);
-      const response = await fetch('http://localhost:8080/api/bikes/checkout', {
+      const response = await fetch('http://localhost:8080/api/bikes/reserve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -104,12 +106,55 @@ export default function MapWeb() {
     }
   };
 
+  const handleCheckoutBike = async (station: StationData) => {
+    const bikeDock = station.docks?.find(d => d.bike);
+    if (!bikeDock?.bike) {
+      Alert.alert('Error', 'No available bike to checkout at this station');
+      return;
+    }
+
+    const riderId = (user as any)?.id ?? (user as any)?.userId ?? (user as any)?.sub ?? 1;
+    const bikeId = bikeDock.bike.id;
+
+    const body = {
+      riderId,
+      stationId: station.id,
+      bikeId
+    };
+
+    try {
+      console.log('Checkout bike with body:', body);
+      const response = await fetch('http://localhost:8080/api/bikes/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Checkout response:', data);
+        setHasReservedBike(false);
+        setReservedBikeId(null);
+        setHasCheckoutBike(true);
+        setCheckoutBikeId(bikeId);
+        setSelectedStation(null);
+        Alert.alert('Success', 'Bike checked out successfully');
+      } else {
+        const errText = await response.text();
+        console.error('Checkout failed:', errText);
+        Alert.alert('Error', errText || 'Failed to checkout bike');
+      }
+    } catch (err) {
+      console.error('Checkout error:', err);
+      Alert.alert('Error', 'Failed to checkout bike');
+    }
+  };
 
   const handleReturnBike = async (station: StationData) => {
     // rider must have a reserved bike id
-    const bikeId = reservedBikeId;
+    const bikeId = checkoutBikeId;
     if (!bikeId) {
-      Alert.alert('Error', 'No reserved bike to return');
+      Alert.alert('Error', 'No bike to return');
       return;
     }
 
@@ -132,9 +177,8 @@ export default function MapWeb() {
       if (response.ok) {
         const data = await response.json();
         console.log('Return response:', data);
-        setHasReservedBike(false);
-        setReservedBikeId(bikeId);
-        setReservedBikeId(null);
+        setHasCheckoutBike(false);
+        setCheckoutBikeId(null);
         setSelectedStation(null);
         Alert.alert('Success', 'Bike returned successfully');
       } else {
@@ -233,8 +277,10 @@ export default function MapWeb() {
         station={selectedStation}
         userRole={userRole}
         hasReservedBike={hasReservedBike}
+        hasCheckoutBike={hasCheckoutBike}
         onClose={() => setSelectedStation(null)}
         onReserveBike={handleReserveBike}
+        onCheckoutBike={handleCheckoutBike}
         onReturnBike={handleReturnBike}
         onMoveBike={handleMoveBike}
         onMaintenanceBike={handleMaintenanceBike}

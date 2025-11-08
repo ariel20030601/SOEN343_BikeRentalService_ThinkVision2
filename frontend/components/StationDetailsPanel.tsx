@@ -50,8 +50,10 @@ interface StationDetailsPanelProps {
   station: StationData | null;
   userRole: 'rider' | 'operator';
   hasReservedBike?: boolean;
+  hasCheckoutBike?: boolean;
   onClose: () => void;
   onReserveBike?: (station: StationData) => void;
+  onCheckoutBike?: (station: StationData) => void;
   onReturnBike?: (station: StationData) => void;
   onMoveBike?: (station: StationData) => void;
   onMaintenanceBike?: (station: StationData, dockIndex: number) => void;
@@ -62,8 +64,10 @@ export default function StationDetailsPanel({
   station,
   userRole,
   hasReservedBike = false,
+  hasCheckoutBike = false,
   onClose,
   onReserveBike,
+  onCheckoutBike,
   onReturnBike,
   onMoveBike,
   onMaintenanceBike,
@@ -112,7 +116,8 @@ export default function StationDetailsPanel({
   };
 
   const canReserve = !hasReservedBike && bikesAvailable > 0 && !isOutOfService;
-  const canReturn = hasReservedBike && freeDocks > 0 && !isOutOfService;
+  const canCheckout = !hasCheckoutBike && bikesAvailable > 0 && !isOutOfService;
+  const canReturn = hasCheckoutBike && freeDocks > 0 && !isOutOfService;
   const canMove = bikesAvailable > 0 && !isOutOfService;
 
   const handleDockPress = (dockIndex: number) => {
@@ -215,7 +220,17 @@ export default function StationDetailsPanel({
                     disabled={!canReserve}
                   >
                     <Text style={styles.buttonText}>
-                      {hasReservedBike ? 'Already Have Bike' : 'Reserve Bike'}
+                      {hasCheckoutBike ? 'Bike Already Checked Out' : hasReservedBike ? 'Already Have Reservation' : 'Reserve Bike'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.warningButton, !canCheckout && styles.disabledButton]}
+                    onPress={() => {if (canCheckout) {onCheckoutBike?.(station); setSelectedDock(null);}}}
+                    disabled={!canCheckout}
+                  >
+                    <Text style={styles.buttonText}>
+                      {hasCheckoutBike ? 'Already Have Bike' : 'Checkout Bike'}
                     </Text>
                   </TouchableOpacity>
 
@@ -227,7 +242,7 @@ export default function StationDetailsPanel({
                     <Text style={styles.buttonText}>Return Bike</Text>
                   </TouchableOpacity>
 
-                  {!canReturn && hasReservedBike && freeDocks === 0 && (
+                  {!canReturn && hasCheckoutBike && freeDocks === 0 && (
                     <Text style={styles.errorText}>
                       No free docks available. Please return to another station.
                     </Text>

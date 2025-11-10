@@ -5,7 +5,6 @@ import { APIProvider, Map } from '@vis.gl/react-google-maps';
 import Markers from './Markers.web';
 import StationDetailsPanel from '@/components/StationDetailsPanel';
 
-
 export type StationStatus = "EMPTY" | "OCCUPIED" | "FULL" | "OUT_OF_SERVICE";
 
 
@@ -36,15 +35,17 @@ export default function MapWeb() {
   const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
   const [userRole] = useState<'rider' | 'operator'>('rider'); // TODO: Get from context
   const [hasReservedBike, setHasReservedBike] = useState(false);
+  const [hasCheckoutBike, setHasCheckoutBike] = useState(false);
+  const [checkoutBikeId, setCheckoutBikeId] = useState<string | null>(null);
   const [reservedBikeId, setReservedBikeId] = useState<string | null>(null);
   const { user } = useAuth();    
   const operatorId = 2;
   const [showDestinationModal, setShowDestinationModal] = useState(false);
   const [moveBikeSource, setMoveBikeSource] = useState<{station: StationData, bikeId: string} | null>(null);
 
-  useEffect(() => {
-    async function fetchStations() {
-      try {
+
+  const fetchStations = async () => {
+    try {
         console.log("operatorId:", operatorId);
         const response = await fetch('http://localhost:8080/api/stations');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -54,24 +55,17 @@ export default function MapWeb() {
       } catch (err) {
         console.error("Failed to fetch stations", err);
       }
-    }
+  }
+  useEffect(() => {
     fetchStations();
   }, []);
 
 
 // ...existing code...
-  const handleReserveBike = async (station: StationData) => {
-    // pick a bike from the station (first dock that has a bike)
-    const bikeDock = station.docks?.find(d => d.bike);
-    if (!bikeDock?.bike) {
-      Alert.alert('Error', 'No available bike to reserve at this station');
-      return;
-    }
-
+  const handleReserveBike = async (station: StationData, bikeId: string) => {
     // derive riderId from auth user (safe fallbacks)
     const riderId = (user as any)?.id ?? (user as any)?.userId ?? (user as any)?.sub ?? 1;
-    const bikeId = bikeDock.bike.id;
-
+    
     const body = {
       riderId,
       stationId: station.id,
@@ -80,7 +74,7 @@ export default function MapWeb() {
 
     try {
       console.log('Reserving bike with body:', body);
-      const response = await fetch('http://localhost:8080/api/bikes/checkout', {
+      const response = await fetch('http://localhost:8080/api/bikes/reserve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -91,28 +85,85 @@ export default function MapWeb() {
         console.log('Reserve response:', data);
         setHasReservedBike(true);
         setReservedBikeId(bikeId);
-        setSelectedStation(null);
-        Alert.alert('Success', 'Bike reserved successfully');
+        console.log('Success', 'Bike reserved successfully');
       } else {
         const errText = await response.text();
         console.error('Reserve failed:', errText);
-        Alert.alert('Error', errText || 'Failed to reserve bike');
+        console.log('Error', errText || 'Failed to reserve bike');
       }
     } catch (err) {
       console.error('Reserve error:', err);
-      Alert.alert('Error', 'Failed to reserve bike');
+      console.log('Error', 'Failed to reserve bike');
     }
   };
 
-
-  const handleReturnBike = async (station: StationData) => {
-    // rider must have a reserved bike id
-    const bikeId = reservedBikeId;
-    if (!bikeId) {
-      Alert.alert('Error', 'No reserved bike to return');
-      return;
+  const handleCheckoutBike = async (station: StationData, bikeId?: string) => {
+    const riderId = (user as any)?.id ?? (user as any)?.userId ?? (user as any)?.sub ?? 1;
+    
+    let finalBikeId: string;
+    if (hasReservedBike && reservedBikeId) {
+    // Verify the reserved bike is at this station
+      const reservedBikeDock = station.docks?.find(d => d.bike?.id === reservedBikeId);
+      if (!reservedBikeDock) {
+        console.log('Error', 'Your reserved bike is not at this station');
+        return;
+      }
+      finalBikeId = reservedBikeId;
+    } else {
+      // No reservation - must select a bike that's AVAILABLE (not reserved)
+      if (!bikeId) {
+        console.log('Error', 'Please select a bike to checkout');
+        return;
+      }
+      
+      const selectedDock = station.docks?.find(d => d.bike?.id === bikeId);
+      if (!selectedDock?.bike) {
+        console.log('Error', 'Selected bike not found');
+        return;
+      }
+      
+      if (selectedDock.bike.status === 'RESERVED') {
+        console.log('Error', 'This bike is reserved by another rider');
+        return;
+      }
+      finalBikeId = bikeId;
     }
 
+    const body = {
+      riderId,
+      stationId: station.id,
+      bikeId: finalBikeId
+    };
+
+    try {
+      console.log('Checkout bike with body:', body);
+      const response = await fetch('http://localhost:8080/api/bikes/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Checkout response:', data);
+        setHasReservedBike(false);
+        setReservedBikeId(null);
+        setHasCheckoutBike(true);
+        setCheckoutBikeId(finalBikeId);
+        setSelectedStation(null);
+        console.log('Success', 'Bike checked out successfully');
+      } else {
+        const errText = await response.text();
+        console.error('Checkout failed:', errText);
+        console.log('Error', errText || 'Failed to checkout bike');
+      }
+    } catch (err) {
+      console.error('Checkout error:', err);
+      console.log('Error', 'Failed to checkout bike');
+    }
+  };
+
+  const handleReturnBike = async (station: StationData, bikeId: string) => {
     const riderId = (user as any)?.id ?? (user as any)?.userId ?? (user as any)?.sub ?? 1;
 
     const body = {
@@ -132,30 +183,28 @@ export default function MapWeb() {
       if (response.ok) {
         const data = await response.json();
         console.log('Return response:', data);
-        setHasReservedBike(false);
-        setReservedBikeId(bikeId);
-        setReservedBikeId(null);
-        setSelectedStation(null);
-        Alert.alert('Success', 'Bike returned successfully');
+        setHasCheckoutBike(false);
+        setCheckoutBikeId(null);
+        console.log('Success', 'Bike returned successfully');
       } else {
         const errText = await response.text();
         console.error('Return failed:', errText);
-        Alert.alert('Error', errText || 'Failed to return bike');
+        console.log('Error', errText || 'Failed to return bike');
       }
     } catch (err) {
       console.error('Return error:', err);
-      Alert.alert('Error', 'Failed to return bike');
+      console.log('Error', 'Failed to return bike');
     }
   };
 
   // Show modal after clicking Move Bike
-  const handleMoveBike = (station: StationData) => {
-    const dock13 = station.docks?.find(dock => dock.name === "Dock 13" && dock.bike);
-    if (!dock13?.bike) {
+  const handleMoveBike = (station: StationData, dockIndex: number) => {
+    const dock = station.docks?.[dockIndex];
+    if (!dock?.bike) {
       Alert.alert('Error', 'No bike found in Dock 13');
       return;
     }
-    setMoveBikeSource({ station, bikeId: dock13.bike.id });
+    setMoveBikeSource({ station, bikeId: dock.bike.id });
     setShowDestinationModal(true);
   };
 
@@ -175,14 +224,15 @@ export default function MapWeb() {
       );
       console.log('Move bike response:', response);
       if (response.ok) {
-        Alert.alert('Success', 'Bike moved successfully!');
+        console.error('Success', 'Bike moved successfully!');
+        await fetchStations();
       } else {
         const errorText = await response.text();
-        Alert.alert('Error', errorText);
+        console.error('Error', errorText);
       }
     } catch (err) {
       console.error(err);
-      Alert.alert('Error', 'Failed to move bike');
+      console.error('Error', 'Failed to move bike');
     } finally {
       setShowDestinationModal(false);
       setMoveBikeSource(null);
@@ -222,22 +272,26 @@ export default function MapWeb() {
           defaultZoom={13}
           gestureHandling={'greedy'}
           disableDefaultUI={false}
-          mapId={'AIzaSyCXEnqnsX-Sl1DevG3W1N8BBg7D2MdZwsU'}
+          mapId={'ceb9e4d79f5cb872a4f0b0bd'}
         >
           <Markers stations={stations} onMarkerPress={setSelectedStation} />
         </Map>
       </APIProvider>
 
       <StationDetailsPanel
-        visible={selectedStation !== null}
-        station={selectedStation}
-        userRole={userRole}
-        hasReservedBike={hasReservedBike}
-        onClose={() => setSelectedStation(null)}
-        onReserveBike={handleReserveBike}
-        onReturnBike={handleReturnBike}
-        onMoveBike={handleMoveBike}
-        onMaintenanceBike={handleMaintenanceBike}
+          visible={selectedStation !== null}
+          station={selectedStation}
+          userRole={userRole}
+          hasReservedBike={hasReservedBike}
+          reservedBikeId={reservedBikeId} // Add this
+          hasCheckoutBike={hasCheckoutBike}
+          checkoutBikeId={checkoutBikeId}
+          onClose={() => setSelectedStation(null)}
+          onReserveBike={handleReserveBike}
+          onCheckoutBike={handleCheckoutBike}
+          onReturnBike={handleReturnBike}
+          onMoveBike={handleMoveBike}
+          onMaintenanceBike={handleMaintenanceBike}
       />
 
       {/* Destination Station Modal */}

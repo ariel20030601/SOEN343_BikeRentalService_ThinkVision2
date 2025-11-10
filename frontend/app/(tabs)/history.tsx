@@ -1,73 +1,39 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
-import { fetchAllUsers, fetchBillingHistory, TripSummary, User } from "@/api/auth/api";
-import { useAuth } from "@/contexts/AuthContext";
+import { Ionicons } from "@expo/vector-icons";
+import React from "react";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 
 export default function History() {
-  const { user, token } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [trips, setTrips] = useState<TripSummary[]>([]);
-
-  const username = (user?.username as string) || "";
-
-  useEffect(() => {
-    const run = async () => {
-      if (!token || !username) return;
-      setLoading(true);
-      setError(null);
-      try {
-        
-        const users: User[] = await fetchAllUsers(token);
-        const me = users.find(u => u.username === username);
-        if (!me) {
-          throw new Error("Current user not found");
-        }
-        const history = await fetchBillingHistory(me.id);
-        setTrips(history);
-      } catch (e: any) {
-        setError(e?.message || "Failed to load history");
-      } finally {
-        setLoading(false);
-      }
-    };
-    run();
-  }, [token, username]);
+  const data = [
+    { id: 1, type: "Regular", start: "Saint-Catherine", finish: "Mont Royal", duration: "15 min" },
+    { id: 2, type: "E-Bike", start: "Cote des Neiges", finish: "Vieux-Port", duration: "22 min" },
+    { id: 3, type: "Regular", start: "Concordia University", finish: "Longeuil", duration: "10 min" },
+  ];
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Bike Trip Records</Text>
+      <Text style={styles.title}>  Bike Trip Records</Text>
 
-      {loading && (
-        <View style={{ paddingVertical: 20 }}>
-          <ActivityIndicator size="small" />
-        </View>
-      )}
-      {error && (
-        <Text style={{ color: "#b00020", textAlign: "center", marginBottom: 12 }}>{error}</Text>
-      )}
-
-      <View style={[styles.row, styles.headerRow]}>
-        <Text style={[styles.cell, styles.headerCell, { flex: 0.6 }]}>ID</Text>
+        <View style={[styles.row, styles.headerRow]}>
+        <Text style={[styles.cell, styles.headerCell, { flex: 0.5 }]}>ID</Text>
         <Text style={[styles.cell, styles.headerCell, { flex: 1.2 }]}>Type of Bike</Text>
-        <Text style={[styles.cell, styles.headerCell, { flex: 1.6 }]}>Starting Point</Text>
-        <Text style={[styles.cell, styles.headerCell, { flex: 1.6 }]}>Finish Point</Text>
+        <Text style={[styles.cell, styles.headerCell, { flex: 1.5 }]}>Starting Point</Text>
+        <Text style={[styles.cell, styles.headerCell, { flex: 1.5 }]}>Finish Point</Text>
         <Text style={[styles.cell, styles.headerCell, { flex: 1 }]}>Duration</Text>
       </View>
 
-      {trips.map((t, index) => (
+      {data.map((item, index) => (
         <View
-          key={t.tripId}
+          key={item.id}
           style={[
             styles.row,
             { backgroundColor: index % 2 === 0 ? "#fff" : "#f8f8f8" },
           ]}
         >
-          <Text style={[styles.cell, { flex: 0.6 }]}>{t.tripId}</Text>
-          <Text style={[styles.cell, { flex: 1.2 }]}>{t.bikeType}</Text>
-          <Text style={[styles.cell, { flex: 1.6 }]}>{t.startStationName}</Text>
-          <Text style={[styles.cell, { flex: 1.6 }]}>{t.endStationName}</Text>
-          <Text style={[styles.cell, { flex: 1 }]}>{t.durationMinutes} min</Text>
+          <Text style={[styles.cell, { flex: 0.5 }]}>{item.id}</Text>
+          <Text style={[styles.cell, { flex: 1.2 }]}>{item.type}</Text>
+          <Text style={[styles.cell, { flex: 1.5 }]}>{item.start}</Text>
+          <Text style={[styles.cell, { flex: 1.5 }]}>{item.finish}</Text>
+          <Text style={[styles.cell, { flex: 1 }]}>{item.duration}</Text>
         </View>
       ))}
     </ScrollView>

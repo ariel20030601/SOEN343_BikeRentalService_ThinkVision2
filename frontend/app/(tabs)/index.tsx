@@ -1,88 +1,127 @@
-import { View, StyleSheet, TouchableOpacity, Image } from "react-native";
-import MapScreen from "@/components/Map";
-import SearchButton from '@/components/SearchButton'
-import ProfileButton from "@/components/ProfileButton";
-import InfoButton from "@/components/InfoButton";
-import MapLegend from '@/components/MapLegend';
-
-const PlaceholderImage = require('@/assets/images/bibixi_logo.png');
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
+import { router } from 'expo-router';
 
 export default function Index() {
-
-
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.brand}>ThinkVision</Text>
+        <Text style={styles.title}>Bike Rental Service</Text>
 
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.iconButton}>
-          <ProfileButton />
-        </TouchableOpacity>
+        <Text style={styles.lead}>
+          Find, reserve, and ride shared bikes across the city. Fast unlock, secure
+          payments, and operator tools when you need them.
+        </Text>
 
-          <TouchableOpacity style={styles.iconButton}>
-            <InfoButton />
+        <View style={styles.features}>
+          <Text style={styles.feature}>• Nearby stations & live availability</Text>
+          <Text style={styles.feature}>• Reserve bikes & unlock with QR</Text>
+          <Text style={styles.feature}>• Trip history and receipts</Text>
+          <Text style={styles.feature}>• Operator dashboard and monitoring</Text>
+        </View>
+
+        <View style={styles.actions}>
+          <TouchableOpacity style={styles.primary} onPress={() => router.push('/(tabs)/login')}>
+            <Text style={styles.primaryText}>Get started</Text>
           </TouchableOpacity>
 
-        <View style={styles.rightIcons}>
-          <TouchableOpacity style={styles.iconButton}>
-            <SearchButton />
+          <TouchableOpacity style={styles.secondary} onPress={() => router.push('/(tabs)/signup')}>
+            <Text style={styles.secondaryText}>Create account</Text>
           </TouchableOpacity>
         </View>
-      </View>
 
-      <View style={styles.mapContainer}>
-        <MapScreen/>
-      </View>
-
-      <View style={styles.footer}>
-        <MapLegend/>
-      </View>
-
-    </View>
+        <Text style={styles.note}>Tip: Operators can log in to access the operator map.</Text>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
+const ORANGE = '#F15A29';
+const LIGHT_ORANGE = '#FFECE4';
+
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: LIGHT_ORANGE },
   container: {
-    flex: 1,
-    backgroundColor: "#F9F6F1",
-    alignItems: "center",
-    justifyContent: "center",
+    flexGrow: 1,
+    paddingHorizontal: 28,
+    paddingTop: 48,
+    paddingBottom: 40,
+    justifyContent: 'center',
+    alignItems: 'stretch',
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    width: "100%",
-    paddingHorizontal: 16,
-    paddingTop: 50,
-    paddingBottom: 10,
-    backgroundColor: "#F9F6F1",
-    position: "absolute",
-    top: 0,
-    zIndex: 10,
+  brand: {
+    color: ORANGE,
+    fontSize: 18,
+    fontWeight: '800',
+    textAlign: 'center',
+    letterSpacing: 1,
+    marginBottom: 6,
   },
-  iconButton: {
-    padding: 8,
+  title: {
+    fontSize: 36,
+    fontWeight: '800',
+    textAlign: 'center',
+    color: '#333',
+    marginBottom: 16,
   },
-  rightIcons: {
-    flexDirection: "row",
-    alignItems: "center",
+  lead: {
+    fontSize: 18,
+    color: '#444',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 22,
+    paddingHorizontal: 8,
   },
-  logo: {
-    height: 80,
-    width: 100,
+  features: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 26,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  mapContainer: {
-    width: "100%",
-    flex: 1,
+  feature: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 10,
   },
-  footer: {
-    position: "absolute",
-    bottom: 0,
-    width: "100%",
-    backgroundColor: "#F9F6F1",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    zIndex: 10,
+  actions: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    marginBottom: 18,
+  },
+  primary: {
+    backgroundColor: ORANGE,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  primaryText: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: 16,
+  },
+  secondary: {
+    backgroundColor: 'transparent',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: ORANGE,
+  },
+  secondaryText: {
+    color: ORANGE,
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  note: {
+    textAlign: 'center',
+    color: '#666',
+    marginTop: 12,
+    fontSize: 13,
   },
 });

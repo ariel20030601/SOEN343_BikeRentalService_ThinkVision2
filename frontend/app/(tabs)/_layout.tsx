@@ -61,6 +61,16 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="redirectMap"
+        options={{
+          title: 'Map',
+          headerShown: false,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'map-sharp' : 'map-outline'} color={color} size={24}/>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="search"
         options={{
           href: null, 
@@ -97,6 +107,20 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="bikeReserve"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="operatorMap"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="riderMap"
         options={{
           href: null,
           headerShown: false,

@@ -50,11 +50,13 @@ interface StationDetailsPanelProps {
   station: StationData | null;
   userRole: 'rider' | 'operator';
   hasReservedBike?: boolean;
+  reservedBikeId?: string | null; // Track which bike is reserved
   hasCheckoutBike?: boolean;
+  checkoutBikeId?: string | null;
   onClose: () => void;
-  onReserveBike?: (station: StationData) => void;
-  onCheckoutBike?: (station: StationData) => void;
-  onReturnBike?: (station: StationData) => void;
+  onReserveBike?: (station: StationData, bikeId: string) => void;
+  onCheckoutBike?: (station: StationData, bikeId?: string) => void;
+  onReturnBike?: (station: StationData, bikeId: string) => void;
   onMoveBike?: (station: StationData, dockIndex: number) => void;
   onMaintenanceBike?: (station: StationData, dockIndex: number) => void;
 }
@@ -64,7 +66,9 @@ export default function StationDetailsPanel({
   station,
   userRole,
   hasReservedBike = false,
+  reservedBikeId = null,
   hasCheckoutBike = false,
+  checkoutBikeId = null, // Add this
   onClose,
   onReserveBike,
   onCheckoutBike,
@@ -173,32 +177,40 @@ export default function StationDetailsPanel({
           <ScrollView style={styles.scrollContent}>
             <Text style={styles.sectionTitle}>Docks</Text>
             <View style={styles.dockGrid}>
-              {docks.map((dock, index) => (
-                <TouchableOpacity
-                  key={dock.id}
-                  style={[
-                    styles.dockCell,
-                    dock.outOfService
-                      ? { backgroundColor: '#B0BEC5', borderColor: '#78909C' }
-                      : dock.occupied
-                      ? styles.dockOccupied
-                      : styles.dockEmpty,
-                    selectedDock === index && styles.dockSelected,
-                  ]}
-                  onPress={() => handleDockPress(index)}
-                  disabled={!dock.occupied}
-                >
-                  <Text style={styles.dockNumber}>{index + 1}</Text>
-                  {dock.type === 'ebike' && (
-                    <View style={styles.eBikeBadge}>
-                      <Text style={styles.eBikeText}>E</Text>
-                    </View>
-                  )}
-                  {dock.type === 'standard' && dock.occupied && (
-                    <Text style={styles.bikeIcon}>🚲</Text>
-                  )}
-                </TouchableOpacity>
-              ))}
+              {docks.map((dock, index) => {
+                const isReservedByUser = hasReservedBike && 
+                  docksFromBackend[index]?.bike?.id === reservedBikeId;
+                return (
+                  <TouchableOpacity
+                    key={dock.id}
+                    style={[
+                      styles.dockCell,
+                      dock.outOfService
+                        ? { backgroundColor: '#B0BEC5', borderColor: '#78909C' }
+                        : dock.occupied
+                        ? styles.dockOccupied
+                        : styles.dockEmpty,
+                      selectedDock === index && styles.dockSelected,
+                      isReservedByUser && styles.dockReservedByUser, 
+                    ]}
+                    onPress={() => handleDockPress(index)}
+                    disabled={!dock.occupied}
+                  >
+                    <Text style={styles.dockNumber}>{index + 1}</Text>
+                    {isReservedByUser && (
+                      <Text style={styles.reservedIndicator}>★</Text>
+                    )}
+                    {dock.type === 'ebike' && (
+                      <View style={styles.eBikeBadge}>
+                        <Text style={styles.eBikeText}>E</Text>
+                      </View>
+                    )}
+                    {dock.type === 'standard' && dock.occupied && (
+                      <Text style={styles.bikeIcon}>🚲</Text>
+                    )}
+                  </TouchableOpacity>
+                );
+            })}
             </View>
 
             {/* Out of Service Warning */}
@@ -215,28 +227,68 @@ export default function StationDetailsPanel({
               {userRole === 'rider' && (
                 <>
                   <TouchableOpacity
-                    style={[styles.actionButton, styles.primaryButton, !canReserve && styles.disabledButton]}
-                    onPress={() => onReserveBike?.(station)}
-                    disabled={!canReserve}
+                    style={[styles.actionButton, styles.primaryButton, (!canReserve || selectedDock === null) && styles.disabledButton]}
+                    onPress={() => {
+                      if (selectedDock !== null && docks[selectedDock].occupied) {
+                        const dock = docksFromBackend[selectedDock];
+                        if (dock?.bike?.id) {
+                          onReserveBike?.(station, dock.bike.id);
+                          setSelectedDock(null); // Clear selection after reserve
+                        }
+                      }
+                    }}
+                    disabled={!canReserve || selectedDock === null}
                   >
                     <Text style={styles.buttonText}>
-                      {hasCheckoutBike ? 'Bike Already Checked Out' : hasReservedBike ? 'Already Have Reservation' : 'Reserve Bike'}
+                      {hasCheckoutBike ? 'Bike Already Checked Out' : hasReservedBike ? 'Already Have Reservation' : selectedDock !== null 
+                        ? `Reserve Bike from Dock ${selectedDock + 1}` 
+                        : 'Select Bike to Reserve'}
                     </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.actionButton, styles.warningButton, !canCheckout && styles.disabledButton]}
-                    onPress={() => {if (canCheckout) {onCheckoutBike?.(station); setSelectedDock(null);}}}
-                    disabled={!canCheckout}
+                    style={[
+                      styles.actionButton, 
+                      styles.warningButton, 
+                      (!canCheckout || (!hasReservedBike && selectedDock === null)) && styles.disabledButton
+                    ]}
+                    onPress={() => {
+                      if (canCheckout) {
+                        if (hasReservedBike) {
+                          // Has reservation - checkout reserved bike (no selection needed)
+                          onCheckoutBike?.(station);
+                        } else if (selectedDock !== null && docks[selectedDock].occupied) {
+                          // No reservation - checkout selected bike
+                          const dock = docksFromBackend[selectedDock];
+                          if (dock?.bike?.id) {
+                            onCheckoutBike?.(station, dock.bike.id);
+                            setSelectedDock(null);
+                          }
+                        }
+                      }
+                    }}
+                    disabled={!canCheckout || (!hasReservedBike && selectedDock === null)}
                   >
                     <Text style={styles.buttonText}>
-                      {hasCheckoutBike ? 'Already Have Bike' : 'Checkout Bike'}
+                      {hasCheckoutBike 
+                        ? 'Already Have Bike' 
+                        : hasReservedBike 
+                        ? 'Checkout Reserved Bike'
+                        : selectedDock !== null
+                        ? `Checkout Bike from Dock ${selectedDock + 1}`
+                        : 'Select Bike to Checkout'}
                     </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     style={[styles.actionButton, styles.secondaryButton, !canReturn && styles.disabledButton]}
-                    onPress={() => onReturnBike?.(station)}
+                    onPress={() => {
+                      if (checkoutBikeId) {
+                        onReturnBike?.(station, checkoutBikeId);
+                        setSelectedDock(null); 
+                        window.location.reload();
+                      }
+                    }}
                     disabled={!canReturn}
                   >
                     <Text style={styles.buttonText}>Return Bike</Text>
@@ -469,5 +521,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
     marginTop: 8,
+  },
+  dockReservedByUser: {
+  borderColor: '#FFD700',
+  borderWidth: 3,
+  backgroundColor: '#424242',
+  },
+  reservedIndicator: {
+    position: 'absolute',
+    bottom: 2,
+    right: 4,
+    color: '#FFD700',
+    fontSize: 16,
   },
 });

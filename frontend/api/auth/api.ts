@@ -231,13 +231,9 @@ export async function returnBike(
 // ---------- Pricing and Billing ----------
 
 export interface PricingPlan {
-  id?: number;
   name?: string;
-  description?: string;
   pricePerMinute?: number;
   baseFare?: number;
-  monthlyFee?: number;
-  [key: string]: any;
 }
 
 export interface TripSummaryDTO {
@@ -252,8 +248,6 @@ export interface TripSummaryDTO {
   [key: string]: any;
 }
 
-const PRC_API_URL = "http://localhost:8080/api/prc";
-
 // GET /api/prc/getPricingPlans
 export async function getPricingPlans(): Promise<PricingPlan[]> {
   const res = await fetch(`${PRC_API_URL}/getPricingPlans`, { method: "GET" });
@@ -261,8 +255,25 @@ export async function getPricingPlans(): Promise<PricingPlan[]> {
     const text = await res.text().catch(() => "");
     throw new Error(text || `Failed to load pricing plans (${res.status})`);
   }
-  return res.json();
+
+  const raw = await res.json().catch(() => []);
+  if (!Array.isArray(raw)) return [];
+
+  const toNumber = (v: any): number | undefined =>
+    v === null || typeof v === "undefined" ? undefined : Number(v);
+
+  return raw.map((p: any) => {
+    const name = p.planName ;
+    const baseFare = p.baseFare;
+    const pricePerMinute = p.additionalFarePerMinute;
+    return {
+      name,
+      baseFare,
+      pricePerMinute,
+    } as PricingPlan;
+  });
 }
+
 
 // GET /api/prc/summary?tripId=...
 export async function getTripSummary(tripId: number): Promise<TripSummaryDTO> {

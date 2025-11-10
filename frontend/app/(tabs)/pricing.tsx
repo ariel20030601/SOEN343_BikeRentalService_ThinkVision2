@@ -1,54 +1,75 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+// app/(tabs)/pricing.tsx
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { getPricingPlans, PricingPlan } from "../../api/auth/api";
 
 export default function Pricing() {
+  const [plans, setPlans] = useState<PricingPlan[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      try {
+        const data = await getPricingPlans();
+        if (mounted) setPlans(data || []);
+      } catch (e: any) {
+        if (mounted) setError(e?.message || "Failed to load pricing plans");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    load();
+    return () => { mounted = false; };
+  }, []);
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      
-      <Text style={styles.title}> <Ionicons name="bicycle-outline" size={28} color="#f15a29" /> Bibixi: Prices</Text>
+      <Text style={styles.title}>
+        <Ionicons name="bicycle-outline" size={28} color="#f15a29" /> Bibixi: Prices
+      </Text>
 
-  
-      <View style={styles.row}>
-        <View style={styles.box}>
-          <Text style={styles.boxTitle}>Regular Bikes</Text>
-          <Text style={styles.text}>
-          Price per hour: $2.00{"\n"}
-          Price per day: $10.00{"\n"}
-          Weekly pass: $25.00{"\n"}
-          Monthly pass: $60.00
-          </Text>
-          <View style={styles.placeholder}>
-            <Text style={styles.placeholderText}>
-              Capacity: Not applicalbe {"\n"}
-            </Text>
-          </View>
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#f15a29" />
+          <Text style={styles.loadingText}>Loading pricing plans…</Text>
         </View>
+      ) : error ? (
+        <View style={styles.center}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : plans.length === 0 ? (
+        <View style={styles.center}>
+          <Text style={styles.text}>No pricing plans available.</Text>
+        </View>
+      ) : (
+        <View style={styles.flexcont}>
+            {plans.map((plan, i) => (
+              <View key={plan.name ?? i} style={styles.planCard}>
+                <Text style={styles.planTitle}>{plan.name ?? "Unnamed Plan"}</Text>
 
-        <View style={styles.box}>
-          <Text style={styles.boxTitle}>E-Bikes</Text>
-          <Text style={styles.text}>
-          Price per hour: $4.00{"\n"}
-          Price per day: $20.00{"\n"}
-          Weekly pass: $45.00{"\n"}
-          Monthly pass: $100.00
-          </Text>
-          <View style={styles.placeholder}>
-            <Text style={styles.placeholderText}>
-              Capacity: {"\n"}
-              <li> Full Battery 100%: 12 hours of riding {"\n"}</li>
-              <li> Medium Battery 50%: 6 hours of riding {"\n"}</li>
-              <li> Low Battery 10%: 1 hour of riding {"\n"}</li>
-            </Text>
-          </View>
+                {/* baseFare: render only if not null/undefined and is a valid number */}
+                {plan.baseFare != null && !Number.isNaN(Number(plan.baseFare)) && (
+                  <Text style={styles.text}>Base fare: ${Number(plan.baseFare).toFixed(2)}</Text>
+                )}
+
+                {/* pricePerMinute: same safe check; handles 0.25 correctly */}
+                {plan.pricePerMinute != null && !Number.isNaN(Number(plan.pricePerMinute)) && (
+                  <Text style={styles.text}>Price per minute: ${Number(plan.pricePerMinute).toFixed(2)}</Text>
+                )}
+              </View>
+            ))}
         </View>
-      </View>
+      )}
 
       <View style={styles.guidelinesBox}>
         <Text style={styles.boxTitle}>General Guidelines</Text>
         <View style={styles.guidelineList}>
-          <Text style={styles.listItem}>• When reserving and taking a bike, be vigilant for discrepency between the app's mentioned battery life and the amount displayed on the bike.</Text>
-          <Text style={styles.listItem}>• When docking, gently enter the bike into an available dock and await the green light indicating a correct insertion, followed by a notification on the app</Text>
-          <Text style={styles.listItem}>• If any trouble occurs, either bike breaking down or the app maulfunctioning, send an email to the following account: bibibxi-help@gmail.com .</Text>
+          <Text style={styles.listItem}>• When reserving and taking a bike, check battery vs. app display.</Text>
+          <Text style={styles.listItem}>• When docking, insert bike into an available dock and wait for the green light and app notification.</Text>
+          <Text style={styles.listItem}>• If any trouble occurs, email: bibibxi-help@gmail.com</Text>
         </View>
       </View>
     </ScrollView>
@@ -60,55 +81,75 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: "#f5f5f5",
   },
+  center: {
+    alignItems: "center",
+    marginVertical: 12,
+  },
   title: {
     fontSize: 30,
     fontWeight: "bold",
     textAlign: "center",
-    marginBottom: 30,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     marginBottom: 20,
   },
-  box: {
-    flex: 1,
+  flexcont:{
+    flexDirection: "row",
+    flexWrap: "wrap",
+    display: "flex",
+    justifyContent: "space-between",
+      },
+  planCard: {
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
-    marginHorizontal: 4,
+    width: "49%",
+    height: 200,
+    marginBottom: 16,
     shadowColor: "#000",
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  planTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 6,
+  },
+  planDesc: {
+    color: "#666",
+    marginBottom: 8,
+  },
+  text: {
+    color: "#555",
+    marginBottom: 6,
+  },
+  meta: {
+    marginTop: 8,
+  },
+  metaItem: {
+    color: "#777",
+    fontSize: 13,
+    marginBottom: 4,
+  },
+  loadingText: {
+    marginTop: 8,
+    color: "#666",
+  },
+  errorText: {
+    color: "#b00020",
+  },
+  guidelinesBox: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 6,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
   },
   boxTitle: {
     fontSize: 18,
     fontWeight: "600",
-    marginBottom: 8,
-  },
-  text: {
-    color: "#555",
-    marginBottom: 10,
-    paddingBottom: 10,
-  },
-  placeholder: {
-    borderTopWidth: 1,
-    borderTopColor: "#ddd",
-    paddingTop: 10,
-  },
-  placeholderText: {
-    fontStyle: "italic",
-    color: "#888",
-  },
-  guidelinesBox: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   guidelineList: {
     marginTop: 8,

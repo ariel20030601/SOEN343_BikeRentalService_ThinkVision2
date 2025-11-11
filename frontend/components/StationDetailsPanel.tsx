@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   Modal,
   Pressable,
+  TextInput,
+  Alert,
 } from 'react-native';
 
 // Backend structure
@@ -59,6 +61,7 @@ interface StationDetailsPanelProps {
   onReturnBike?: (station: StationData, bikeId: string) => void;
   onMoveBike?: (station: StationData, dockIndex: number) => void;
   onMaintenanceBike?: (station: StationData, dockIndex: number) => void;
+  onAddBikes?: (station: StationData, standardCount: number, ebikeCount: number) => void;
 }
 
 export default function StationDetailsPanel({
@@ -75,8 +78,12 @@ export default function StationDetailsPanel({
   onReturnBike,
   onMoveBike,
   onMaintenanceBike,
+  onAddBikes,
 }: StationDetailsPanelProps) {
   const [selectedDock, setSelectedDock] = useState<number | null>(null);
+  const [showAddBikesModal, setShowAddBikesModal] = useState(false);
+  const [standardBikesInput, setStandardBikesInput] = useState('0');
+  const [eBikesInput, setEBikesInput] = useState('0');
 
   if (!station) return null;
 
@@ -130,6 +137,38 @@ export default function StationDetailsPanel({
     }
   };
 
+  const handleAddBikes = () => {
+    const standardCount = parseInt(standardBikesInput) || 0;
+    const ebikeCount = parseInt(eBikesInput) || 0;
+    const totalToAdd = standardCount + ebikeCount;
+
+    if (totalToAdd <= 0) {
+      Alert.alert('Invalid Input', 'Please add at least 1 bike.');
+      return;
+    }
+
+    if (totalToAdd > freeDocks) {
+      Alert.alert(
+        'Not Enough Space',
+        `You can only add ${freeDocks} bike${freeDocks !== 1 ? 's' : ''} (free docks available).`
+      );
+      return;
+    }
+
+    onAddBikes?.(station, standardCount, ebikeCount);
+    setShowAddBikesModal(false);
+    setStandardBikesInput('0');
+    setEBikesInput('0');
+  };
+
+  const resetAddBikesModal = () => {
+    setShowAddBikesModal(false);
+    setStandardBikesInput('0');
+    setEBikesInput('0');
+  };
+
+  const totalBikesToAdd = (parseInt(standardBikesInput) || 0) + (parseInt(eBikesInput) || 0);
+
   return (
     <Modal
       visible={visible}
@@ -146,33 +185,177 @@ export default function StationDetailsPanel({
               <View style={[styles.statusBadge, { backgroundColor: getStatusColor() }]}>
                 <Text style={styles.statusText}>{station.status.toLowerCase()}</Text>
               </View>
+              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                <Text style={styles.closeText}>✕</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Text style={styles.closeText}>✕</Text>
-            </TouchableOpacity>
-          </View>
 
-          {/* Station Info */}
-          <View style={styles.infoCard}>
-            <Text style={styles.address}>{station.address}</Text>
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{bikesAvailable}</Text>
-                <Text style={styles.statLabel}>Bikes Available</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{freeDocks}</Text>
-                <Text style={styles.statLabel}>Free Docks</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{station.capacity}</Text>
-                <Text style={styles.statLabel}>Total Capacity</Text>
+            {/* Station Info */}
+            <View style={styles.infoCard}>
+              <Text style={styles.address}>{station.address}</Text>
+              <View style={styles.statsRow}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{bikesAvailable}</Text>
+                  <Text style={styles.statLabel}>Bikes Available</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{freeDocks}</Text>
+                  <Text style={styles.statLabel}>Free Docks</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{station.capacity}</Text>
+                  <Text style={styles.statLabel}>Total Capacity</Text>
+                </View>
               </View>
             </View>
-          </View>
 
+            {/* Dock Grid */}
+            <ScrollView style={styles.scrollContent}>
+              <Text style={styles.sectionTitle}>Docks</Text>
+              <View style={styles.dockGrid}>
+                {docks.map((dock, index) => (
+                  <TouchableOpacity
+                    key={dock.id}
+                    style={[
+                      styles.dockCell,
+                      dock.occupied ? styles.dockOccupied : styles.dockEmpty,
+                      selectedDock === index && styles.dockSelected,
+                    ]}
+                    onPress={() => handleDockPress(index)}
+                    disabled={!dock.occupied || userRole === 'rider'}
+                  >
+                    <Text style={styles.dockNumber}>{index + 1}</Text>
+                    {dock.type === 'ebike' && (
+                      <View style={styles.eBikeBadge}>
+                        <Text style={styles.eBikeText}>E</Text>
+                      </View>
+                    )}
+                    {dock.type === 'standard' && dock.occupied && (
+                      <Text style={styles.bikeIcon}>🚲</Text>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Out of Service Warning */}
+              {isOutOfService && (
+                <View style={styles.warningBox}>
+                  <Text style={styles.warningText}>
+                    ⚠️ This station is currently out of service
+                  </Text>
+                </View>
+              )}
+
+              {/* Actions */}
+              <View style={styles.actionsContainer}>
+                {userRole === 'rider' && (
+                  <>
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.primaryButton, !canReserve && styles.disabledButton]}
+                      onPress={() => onReserveBike?.(station)}
+                      disabled={!canReserve}
+                    >
+                      <Text style={styles.buttonText}>
+                        {hasReservedBike ? 'Already Have Bike' : 'Reserve Bike'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.secondaryButton, !canReturn && styles.disabledButton]}
+                      onPress={() => onReturnBike?.(station)}
+                      disabled={!canReturn}
+                    >
+                      <Text style={styles.buttonText}>Return Bike</Text>
+                    </TouchableOpacity>
+
+                    {!canReturn && hasReservedBike && freeDocks === 0 && (
+                      <Text style={styles.errorText}>
+                        No free docks available. Please return to another station.
+                      </Text>
+                    )}
+                  </>
+                )}
+
+                {userRole === 'operator' && (
+                  <>
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.primaryButton, !canMove && styles.disabledButton]}
+                      onPress={() => onMoveBike?.(station)}
+                      disabled={!canMove || selectedDock === null}
+                    >
+                      <Text style={styles.buttonText}>
+                        {selectedDock !== null ? `Move Bike from Dock ${selectedDock + 1}` : 'Select Bike to Move'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.warningButton, selectedDock === null && styles.disabledButton]}
+                      onPress={() => selectedDock !== null && onMaintenanceBike?.(station, selectedDock)}
+                      disabled={selectedDock === null}
+                    >
+                      <Text style={styles.buttonText}>
+                        {selectedDock !== null ? `Send Dock ${selectedDock + 1} to Maintenance` : 'Select Bike First'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.addBikesButton, freeDocks === 0 && styles.disabledButton]}
+                      onPress={() => setShowAddBikesModal(true)}
+                      disabled={freeDocks === 0}
+                    >
+                      <Text style={styles.buttonText}>➕ Add Bikes</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Add Bikes Modal */}
+      <Modal
+        visible={showAddBikesModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={resetAddBikesModal}
+      >
+        <Pressable style={styles.modalOverlay} onPress={resetAddBikesModal}>
+          <Pressable style={styles.addBikesModal} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.modalTitle}>Add Bikes to {station?.title}</Text>
+            
+            <View style={styles.modalInfo}>
+              <Text style={styles.modalInfoText}>
+                Free Docks Available: <Text style={styles.modalInfoHighlight}>{freeDocks}</Text>
+              </Text>
+            </View>
+
+            {/* Standard Bikes Input */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Standard Bikes</Text>
+              <View style={styles.inputContainer}>
+                <TouchableOpacity
+                  style={styles.incrementButton}
+                  onPress={() => setStandardBikesInput(String(Math.max(0, (parseInt(standardBikesInput) || 0) - 1)))}
+                >
+                  <Text style={styles.incrementText}>−</Text>
+                </TouchableOpacity>
+                <TextInput
+                  style={styles.input}
+                  value={standardBikesInput}
+                  onChangeText={(text) => setStandardBikesInput(text.replace(/[^0-9]/g, ''))}
+                  keyboardType="numeric"
+                  maxLength={2}
+                />
+                <TouchableOpacity
+                  style={styles.incrementButton}
+                  onPress={() => setStandardBikesInput(String((parseInt(standardBikesInput) || 0) + 1))}
+                >
+                  <Text style={styles.incrementText}>+</Text>
+                </TouchableOpacity>
+              </View>
           {/* Dock Grid */}
           <ScrollView style={styles.scrollContent}>
             <Text style={styles.sectionTitle}>Docks</Text>
@@ -213,13 +396,41 @@ export default function StationDetailsPanel({
             })}
             </View>
 
-            {/* Out of Service Warning */}
-            {isOutOfService && (
-              <View style={styles.warningBox}>
-                <Text style={styles.warningText}>
-                  ⚠️ This station is currently out of service
-                </Text>
+            {/* E-Bikes Input */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>E-Bikes</Text>
+              <View style={styles.inputContainer}>
+                <TouchableOpacity
+                  style={styles.incrementButton}
+                  onPress={() => setEBikesInput(String(Math.max(0, (parseInt(eBikesInput) || 0) - 1)))}
+                >
+                  <Text style={styles.incrementText}>−</Text>
+                </TouchableOpacity>
+                <TextInput
+                  style={styles.input}
+                  value={eBikesInput}
+                  onChangeText={(text) => setEBikesInput(text.replace(/[^0-9]/g, ''))}
+                  keyboardType="numeric"
+                  maxLength={2}
+                />
+                <TouchableOpacity
+                  style={styles.incrementButton}
+                  onPress={() => setEBikesInput(String((parseInt(eBikesInput) || 0) + 1))}
+                >
+                  <Text style={styles.incrementText}>+</Text>
+                </TouchableOpacity>
               </View>
+            </View>
+
+            {/* Total Summary */}
+            <View style={styles.totalSummary}>
+              <Text style={styles.totalText}>
+                Total Bikes to Add: <Text style={styles.totalHighlight}>{totalBikesToAdd}</Text>
+              </Text>
+              {totalBikesToAdd > freeDocks && (
+                <Text style={styles.errorTextModal}>
+                  ⚠️ Exceeds available free docks ({freeDocks})
+                </Text>
             )}
 
             {/* Actions */}
@@ -301,7 +512,22 @@ export default function StationDetailsPanel({
                   )}
                 </>
               )}
+            </View>
 
+            {/* Modal Actions */}
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={resetAddBikesModal}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={handleAddBikes}
+              >
+                <Text style={styles.confirmButtonText}>Add Bikes</Text>
+              </TouchableOpacity>
               {userRole === 'operator' && (
                 <>
                   <TouchableOpacity
@@ -326,10 +552,10 @@ export default function StationDetailsPanel({
                 </>
               )}
             </View>
-          </ScrollView>
+          </Pressable>
         </Pressable>
-      </Pressable>
-    </Modal>
+      </Modal>
+    </>
   );
 }
 
@@ -522,6 +748,144 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
   },
+  addBikesButton: {
+    backgroundColor: '#9C27B0',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addBikesModal: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 24,
+    width: '85%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  modalInfo: {
+    backgroundColor: '#e3f2fd',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  modalInfoText: {
+    fontSize: 14,
+    color: '#1976d2',
+    textAlign: 'center',
+  },
+  modalInfoHighlight: {
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  incrementButton: {
+    backgroundColor: '#f5f5f5',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  incrementText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  input: {
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#2196F3',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    minWidth: 80,
+    color: '#333',
+  },
+  totalSummary: {
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50',
+  },
+  totalText: {
+    fontSize: 16,
+    color: '#333',
+    textAlign: 'center',
+  },
+  totalHighlight: {
+    fontWeight: 'bold',
+    fontSize: 20,
+    color: '#4CAF50',
+  },
+  errorTextModal: {
+    color: '#F44336',
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 8,
+    fontWeight: '500',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  confirmButton: {
+    backgroundColor: '#4CAF50',
+  },
+  cancelButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  confirmButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   dockReservedByUser: {
   borderColor: '#FFD700',
   borderWidth: 3,

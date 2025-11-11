@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-
 import {
   View,
   Text,
@@ -78,6 +77,13 @@ export default function StationDetailsPanel({
 }: StationDetailsPanelProps) {
   const [selectedDock, setSelectedDock] = useState<number | null>(null);
 
+  // --- Local UI-only state for adding bikes (virtual) ---
+  // Map of dockIndex -> { type: 'STANDARD' | 'E_BIKE' } representing UI-added bikes
+  const [localAdded, setLocalAdded] = useState<Record<number, { type: 'STANDARD' | 'E_BIKE' }>>({});
+  const [addModalVisible, setAddModalVisible] = useState(false);
+  const [addStandard, setAddStandard] = useState(0);
+  const [addEbike, setAddEbike] = useState(0);
+
   if (!station) return null;
 
   // --- Compute bikes and e-bikes dynamically from backend data ---
@@ -92,28 +98,60 @@ export default function StationDetailsPanel({
     }
   });
 
-  const bikesAvailable = standardCount + eBikeCount;
-  const freeDocks = station.freeDocks ?? (station.capacity - bikesAvailable);
+  // Counts including local-added virtual bikes
+  const addedStandardCount = Object.values(localAdded).filter((x) => x.type === 'STANDARD').length;
+  const addedEbikeCount = Object.values(localAdded).filter((x) => x.type === 'E_BIKE').length;
+  const overlayCount = addedStandardCount + addedEbikeCount;
+
+  const baseBikesAvailable = standardCount + eBikeCount;
+  const bikesAvailable = baseBikesAvailable + overlayCount;
+
+  // Always compute free docks from capacity to reflect local UI additions
+  const freeDocks = Math.max(0, station.capacity - bikesAvailable);
   const fullnessPercent = (bikesAvailable / station.capacity) * 100;
   const isOutOfService = station.status === 'OUT_OF_SERVICE';
 
-  // --- Generate Dock Grid for visualization ---
+  // --- Generate Dock Grid for visualization (merge backend + virtual added) ---
   const docks = docksFromBackend.length
-    ? docksFromBackend.map((dock, index) => ({
-        id: dock.id,
-        type: dock.bike ? (dock.bike.type === 'E_BIKE' ? 'ebike' : 'standard') : null,
-        occupied: dock.status === 'OCCUPIED',
-        outOfService: dock.status === 'OUT_OF_SERVICE',
-      }))
-    : Array.from({ length: station.capacity }, (_, i) => ({
-        id: `dock-${i}`,
-        type: null,
-        occupied: i < bikesAvailable,
-        outOfService: false,
-      }));
+    ? docksFromBackend.map((dock, index) => {
+        const originalOccupied = dock.status === 'OCCUPIED' || !!dock.bike;
+        const overlay = localAdded[index];
+        const occupied = originalOccupied || !!overlay;
+        const outOfService = dock.status === 'OUT_OF_SERVICE';
+        const type = overlay
+          ? overlay.type === 'E_BIKE'
+            ? 'ebike'
+            : 'standard'
+          : dock.bike
+          ? dock.bike.type === 'E_BIKE'
+            ? 'ebike'
+            : 'standard'
+          : null;
+        return {
+          id: dock.id,
+          type,
+          occupied,
+          outOfService,
+          virtualAdded: !!overlay && !originalOccupied,
+        };
+      })
+    : Array.from({ length: station.capacity }, (_, i) => {
+        const overlay = localAdded[i];
+        const originalOccupied = i < baseBikesAvailable; // backend approximation when no docks provided
+        const occupied = originalOccupied || !!overlay;
+        const type =
+          overlay ? (overlay.type === 'E_BIKE' ? 'ebike' : 'standard') : originalOccupied ? 'standard' : null;
+        return {
+          id: `dock-${i}`,
+          type,
+          occupied,
+          outOfService: false,
+          virtualAdded: !!overlay && !originalOccupied,
+        };
+      });
 
   const getStatusColor = () => {
-    if (isOutOfService) return '#9E9E9E'; // gray for OOS
+    if (isOutOfService) return '#9E9E9E';
     if (fullnessPercent === 0 || fullnessPercent === 100) return '#F44336';
     if (fullnessPercent < 25 || fullnessPercent > 85) return '#FFC107';
     return '#4CAF50';
@@ -125,10 +163,72 @@ export default function StationDetailsPanel({
   const canMove = bikesAvailable > 0 && !isOutOfService;
 
   const handleDockPress = (dockIndex: number) => {
-    if (docks[dockIndex].occupied) {
+    // prevent selecting virtual-added bikes for actions
+    if (docks[dockIndex].occupied && !docks[dockIndex].virtualAdded) {
       setSelectedDock(dockIndex);
     }
   };
+
+  // Compute empty indices (considering backend occupancy + current virtual additions)
+  const getEmptyIndices = (): number[] => {
+    const total = docksFromBackend.length ? docksFromBackend.length : station.capacity;
+    const occupied = new Set<number>();
+    if (docksFromBackend.length) {
+      docksFromBackend.forEach((d, i) => {
+        if (d.status === 'OCCUPIED' || !!d.bike) occupied.add(i);
+      });
+    } else {
+      for (let i = 0; i < baseBikesAvailable; i++) occupied.add(i);
+    }
+    Object.keys(localAdded).forEach((k) => occupied.add(Number(k)));
+    const empty: number[] = [];
+    for (let i = 0; i < total; i++) {
+      if (!occupied.has(i)) empty.push(i);
+    }
+    return empty;
+  };
+
+  const resetAddModal = () => {
+    setAddStandard(0);
+    setAddEbike(0);
+  };
+
+  const openAddModal = () => {
+    resetAddModal();
+    setAddModalVisible(true);
+  };
+
+  const confirmAddBikes = () => {
+    const toAddTotal = addStandard + addEbike;
+    if (toAddTotal <= 0) return;
+    if (toAddTotal > freeDocks) return;
+
+    const empty = getEmptyIndices();
+    const nextOverlay: Record<number, { type: 'STANDARD' | 'E_BIKE' }> = { ...localAdded };
+
+    // Assign E-BIKEs first, then STANDARDs
+    let remainingE = addEbike;
+    let remainingS = addStandard;
+
+    for (const idx of empty) {
+      if (remainingE > 0) {
+        nextOverlay[idx] = { type: 'E_BIKE' };
+        remainingE--;
+      } else if (remainingS > 0) {
+        nextOverlay[idx] = { type: 'STANDARD' };
+        remainingS--;
+      }
+      if (remainingE === 0 && remainingS === 0) break;
+    }
+
+    setLocalAdded(nextOverlay);
+    setAddModalVisible(false); // auto-close after success
+    resetAddModal();
+  };
+
+  const canAddBikes = freeDocks > 0; // available even if OUT_OF_SERVICE per requirements
+  const addTotal = addStandard + addEbike;
+  const addInvalid = addTotal <= 0 || addTotal > freeDocks;
 
   return (
     <Modal
@@ -191,10 +291,11 @@ export default function StationDetailsPanel({
                         ? styles.dockOccupied
                         : styles.dockEmpty,
                       selectedDock === index && styles.dockSelected,
-                      isReservedByUser && styles.dockReservedByUser, 
+                      isReservedByUser && styles.dockReservedByUser,
+                    
                     ]}
                     onPress={() => handleDockPress(index)}
-                    disabled={!dock.occupied}
+                    disabled={!dock.occupied || dock.virtualAdded}
                   >
                     <Text style={styles.dockNumber}>{index + 1}</Text>
                     {isReservedByUser && (
@@ -224,6 +325,21 @@ export default function StationDetailsPanel({
 
             {/* Actions */}
             <View style={styles.actionsContainer}>
+              {/* Add Bikes (UI-only) - available to all users */}
+              <TouchableOpacity
+                style={[
+                  styles.actionButton,
+                  styles.secondaryButton,
+                  !canAddBikes && styles.disabledButton,
+                ]}
+                onPress={openAddModal}
+                disabled={!canAddBikes}
+              >
+                <Text style={styles.buttonText}>
+                  {canAddBikes ? 'Add Bikes' : 'Station Full'}
+                </Text>
+              </TouchableOpacity>
+
               {userRole === 'rider' && (
                 <>
                   <TouchableOpacity
@@ -329,6 +445,77 @@ export default function StationDetailsPanel({
           </ScrollView>
         </Pressable>
       </Pressable>
+
+      {/* Add Bikes Modal */}
+      <Modal visible={addModalVisible} transparent animationType="fade" onRequestClose={() => setAddModalVisible(false)}>
+        <Pressable style={styles.addModalOverlay} onPress={() => setAddModalVisible(false)}>
+          <Pressable style={styles.addModalCard} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.addModalTitle}>Add Bikes</Text>
+            <Text style={styles.addModalSubtitle}>
+              Free docks available: {freeDocks}
+            </Text>
+
+            <View style={styles.stepRow}>
+              <Text style={styles.stepLabel}>Standard</Text>
+              <View style={styles.stepControls}>
+                <TouchableOpacity
+                  style={[styles.stepBtn, addStandard <= 0 && styles.stepBtnDisabled]}
+                  onPress={() => setAddStandard(Math.max(0, addStandard - 1))}
+                  disabled={addStandard <= 0}
+                >
+                  <Text style={styles.stepBtnText}>−</Text>
+                </TouchableOpacity>
+                <View style={styles.stepValueBox}><Text style={styles.stepValue}>{addStandard}</Text></View>
+                <TouchableOpacity
+                  style={[styles.stepBtn, addStandard + addEbike >= freeDocks && styles.stepBtnDisabled]}
+                  onPress={() => setAddStandard(Math.min(freeDocks - addEbike, addStandard + 1))}
+                  disabled={addStandard + addEbike >= freeDocks}
+                >
+                  <Text style={styles.stepBtnText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.stepRow}>
+              <Text style={styles.stepLabel}>E-Bike</Text>
+              <View style={styles.stepControls}>
+                <TouchableOpacity
+                  style={[styles.stepBtn, addEbike <= 0 && styles.stepBtnDisabled]}
+                  onPress={() => setAddEbike(Math.max(0, addEbike - 1))}
+                  disabled={addEbike <= 0}
+                >
+                  <Text style={styles.stepBtnText}>−</Text>
+                </TouchableOpacity>
+                <View style={styles.stepValueBox}><Text style={styles.stepValue}>{addEbike}</Text></View>
+                <TouchableOpacity
+                  style={[styles.stepBtn, addStandard + addEbike >= freeDocks && styles.stepBtnDisabled]}
+                  onPress={() => setAddEbike(Math.min(freeDocks - addStandard, addEbike + 1))}
+                  disabled={addStandard + addEbike >= freeDocks}
+                >
+                  <Text style={styles.stepBtnText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <Text style={styles.addSummary}>
+              Total to add: {addTotal} {addInvalid && '(invalid selection)'}
+            </Text>
+
+            <View style={styles.addActions}>
+              <TouchableOpacity style={[styles.addCancelBtn]} onPress={() => setAddModalVisible(false)}>
+                <Text style={styles.addCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.addConfirmBtn, addInvalid && styles.addConfirmDisabled]}
+                onPress={confirmAddBikes}
+                disabled={addInvalid}
+              >
+                <Text style={styles.addConfirmText}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Modal>
   );
 }
@@ -533,5 +720,107 @@ const styles = StyleSheet.create({
     right: 4,
     color: '#FFD700',
     fontSize: 16,
+  },
+
+  // Add Bikes modal styles
+  addModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  addModalCard: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+  },
+  addModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#333',
+  },
+  addModalSubtitle: {
+    marginTop: 4,
+    color: '#666',
+  },
+  stepRow: {
+    marginTop: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  stepLabel: {
+    fontSize: 16,
+    color: '#333',
+  },
+  stepControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  stepBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#E3F2FD',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepBtnDisabled: {
+    backgroundColor: '#EEE',
+  },
+  stepBtnText: {
+    fontSize: 20,
+    color: '#1976D2',
+    fontWeight: '700',
+    marginTop: -2,
+  },
+  stepValueBox: {
+    minWidth: 48,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+  },
+  stepValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  addSummary: {
+    marginTop: 16,
+    textAlign: 'center',
+    color: '#666',
+  },
+  addActions: {
+    marginTop: 16,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  addCancelBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  addCancelText: {
+    color: '#666',
+    fontWeight: '600',
+  },
+  addConfirmBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: '#4CAF50',
+  },
+  addConfirmDisabled: {
+    backgroundColor: '#BDBDBD',
+  },
+  addConfirmText: {
+    color: 'white',
+    fontWeight: '700',
   },
 });

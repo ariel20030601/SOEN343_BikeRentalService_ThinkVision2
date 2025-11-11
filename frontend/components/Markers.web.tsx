@@ -1,22 +1,55 @@
+import React from 'react';
 import { AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
-import { STATIONS_DATA, StationData } from '@/hardcode/stationsData';
+
+export type StationStatus = "EMPTY" | "OCCUPIED" | "FULL" | "OUT_OF_SERVICE";
+
+export interface StationData {
+  id: string;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  capacity: number;
+  availableBikes: number;
+  freeDocks: number;
+  status: StationStatus;
+  docks?: {
+    id: string;
+    name: string;
+    status: string;
+    bike?: {
+      id: string;
+      type: "STANDARD" | "E_BIKE";
+      status: string;
+    };
+  }[];
+}
 
 interface MarkersProps {
+  stations: StationData[];
   onMarkerPress: (station: StationData) => void;
 }
 
-export default function Markers({ onMarkerPress }: MarkersProps) {
+export default function Markers({ stations, onMarkerPress }: MarkersProps) {
+  if (!stations || stations.length === 0) {
+    console.warn('No stations to display on map');
+    return null;
+  }
+
   return (
     <>
-      {STATIONS_DATA.map((station) => (
+      {stations.map((station) => (
         <AdvancedMarker
           key={station.id}
           position={{
-            lat: station.location.lat,
-            lng: station.location.lng
+            lat: station.latitude,
+            lng: station.longitude
           }}
-          onClick={() => onMarkerPress(station)}
-          title={`${station.title} - ${parseInt(station.bikes) + parseInt(station.ebikes)} bikes available`}
+          onClick={() => {
+            console.log(`Clicked marker for ${station.name}`);
+            onMarkerPress(station);
+          }}
+          title={`${station.name} - ${station.availableBikes} bikes available`}
         >
           <Pin
             background={getMarkerColor(station)}
@@ -30,9 +63,8 @@ export default function Markers({ onMarkerPress }: MarkersProps) {
 }
 
 function getMarkerColor(station: StationData): string {
-  const bikesAvailable = parseInt(station.bikes) + parseInt(station.ebikes);
-  const fullnessPercent = (bikesAvailable / station.capacity) * 100;
-  
+  const fullnessPercent = (station.availableBikes / station.capacity) * 100;
+
   if (fullnessPercent === 0 || fullnessPercent === 100) return '#ef4444'; // red
   if (fullnessPercent < 25 || fullnessPercent > 85) return '#eab308'; // yellow
   return '#22c55e'; // green

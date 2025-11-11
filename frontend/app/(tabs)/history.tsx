@@ -37,22 +37,13 @@ export default function History() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Bike Trip Records</Text>
+      <Text style={styles.title}>  Bike Trip Records</Text>
 
-      {loading && (
-        <View style={{ paddingVertical: 20 }}>
-          <ActivityIndicator size="small" />
-        </View>
-      )}
-      {error && (
-        <Text style={{ color: "#b00020", textAlign: "center", marginBottom: 12 }}>{error}</Text>
-      )}
-
-      <View style={[styles.row, styles.headerRow]}>
-        <Text style={[styles.cell, styles.headerCell, { flex: 0.6 }]}>ID</Text>
+        <View style={[styles.row, styles.headerRow]}>
+        <Text style={[styles.cell, styles.headerCell, { flex: 0.5 }]}>ID</Text>
         <Text style={[styles.cell, styles.headerCell, { flex: 1.2 }]}>Type of Bike</Text>
-        <Text style={[styles.cell, styles.headerCell, { flex: 1.6 }]}>Starting Point</Text>
-        <Text style={[styles.cell, styles.headerCell, { flex: 1.6 }]}>Finish Point</Text>
+        <Text style={[styles.cell, styles.headerCell, { flex: 1.5 }]}>Starting Point</Text>
+        <Text style={[styles.cell, styles.headerCell, { flex: 1.5 }]}>Finish Point</Text>
         <Text style={[styles.cell, styles.headerCell, { flex: 1 }]}>Duration</Text>
         <Text style={[styles.cell, styles.headerCell, { flex: 1 }]}>Cost</Text>
       </View>

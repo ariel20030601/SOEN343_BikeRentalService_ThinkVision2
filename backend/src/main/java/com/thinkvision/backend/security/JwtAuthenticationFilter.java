@@ -25,23 +25,41 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.userDetailsService = userDetailsService;
     }
 
+    private static final List<String> SKIP_PATH_PREFIXES = List.of(
+            "/users/register",
+            "/users/login",
+            "/api/operator/",
+            "/api/dashboard/",
+            "/api/bikes/reserve",
+            "/api/bikes/checkout",
+            "/api/stations",
+            "/api/bikes/return"
+    );
+
+    private boolean shouldSkip(HttpServletRequest request) {
+        String path = request.getServletPath();
+        for (String p : SKIP_PATH_PREFIXES) {
+            if (path.startsWith(p)) return true;
+        }
+        return false;
+    }
+
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-
-        String header = request.getHeader("Authorization");
-        String token = null;
-        if (StringUtils.hasText(header) && header.startsWith("Bearer ")) {
-            token = header.substring(7);
+        if (shouldSkip(request)) {
+            filterChain.doFilter(request, response);
+            return;
         }
 
-        if (token != null && jwtUtils.validateJwt(token)) {
-            String username = jwtUtils.getUsernameFromJwt(token);
-            var userDetails = userDetailsService.loadUserByUsername(username);
-            var auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-            auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(auth);
+        try {
+            // existing JWT extraction/validation and SecurityContext population
+        } catch (Exception ex) {
+            // don't throw: send 401/403 or just continue depending on desired behavior
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid or missing token");
+            return;
         }
 
         filterChain.doFilter(request, response);

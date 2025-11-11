@@ -3,11 +3,11 @@ import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import Markers from './Markers.native';
 import StationDetailsPanel from '@/components/StationDetailsPanel';
 import { View, StyleSheet } from 'react-native';
-import { StationData } from '@/hardcode/stationsData';
+import { StationData } from '@/hardcode/MapStyle';
 
 export default function MapNative() {
   const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
-  const [userRole] = useState<'rider' | 'operator'>('operator'); // TODO: Get from context
+  const [userRole] = useState<'rider' | 'operator'>('operator');
   const [hasReservedBike, setHasReservedBike] = useState(false);
 
   const handleReserveBike = (station: StationData) => {
@@ -49,7 +49,7 @@ export default function MapNative() {
         showsUserLocation
         showsMyLocationButton
       >
-      <Markers onMarkerPress={setSelectedStation} />
+        <Markers onMarkerPress={setSelectedStation} />
       </MapView>
 
       <StationDetailsPanel

@@ -44,23 +44,7 @@ export default function MapWeb() {
   };
 
   const handleAddBikes = (station: StationData, standardCount: number, ebikeCount: number) => {
-    console.log(`Adding ${standardCount} standard bikes and ${ebikeCount} e-bikes to ${station.title}`);
-    
-    // Update the station's bike counts in the stations array
-    setStations(prevStations => 
-      prevStations.map(s => 
-        s.id === station.id 
-          ? {
-              ...s,
-              bikes: String(parseInt(s.bikes) + standardCount),
-              ebikes: String(parseInt(s.ebikes) + ebikeCount),
-              docks: String(parseInt(s.docks) - standardCount - ebikeCount),
-            }
-          : s
-      )
-    );
-    
-    // No need to update selectedStation separately - it will be found from stations array
+    // intentionally left empty
   };
 
   const handleMarkerPress = (station: StationData) => {

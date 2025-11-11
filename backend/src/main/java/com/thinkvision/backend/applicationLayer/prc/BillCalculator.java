@@ -31,13 +31,14 @@ public class BillCalculator {
     @Autowired
     private BikeRepository bikeRepo;
 
+    @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
 
     private PaymentService paymentService;
 
     @EventListener
     public void computeCost(TripEndedEvent event) {
-        Optional<Trip> opt = tripRepo.findById(Long.toString(event.getTripId()));
+        Optional<Trip> opt = tripRepo.findById(event.getTripId());
         if (opt.isEmpty()) return;
 
         Trip trip = opt.get();
@@ -57,13 +58,17 @@ public class BillCalculator {
         // keep decoupled: for now compute and log; or forward to billing repo/service if present
         System.out.println("BillCalculator: tripId=" + trip.getId() + " minutes=" + minutes + " cost=" + cost);
 
-        Station startStation = stationRepo.findById(trip.getStartStationId()).orElse(null);
-        Station endStation = stationRepo.findById(trip.getEndStationId()).orElse(null);
-
-        // save a billing record here.
-        assert startStation != null;
-        tripReceiptRepo.save(new TripReceipt(trip.getId(),trip.getRider().getId(), trip.getStartTime(), trip.getEndTime(),
-                bike.getId(), startStation.getName(), endStation.getName(), cost));
+        // save a billing record here using station IDs (FK-safe)
+        tripReceiptRepo.save(new TripReceipt(
+                trip.getId(),
+                trip.getRider().getId(),
+                trip.getStartTime(),
+                trip.getEndTime(),
+                bike.getId(),
+                trip.getStartStationId(),
+                trip.getEndStationId(),
+                cost
+        ));
 
         applicationEventPublisher.publishEvent(new ProcessPaymentEvent(trip, cost));
     }

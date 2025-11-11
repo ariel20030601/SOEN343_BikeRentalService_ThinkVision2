@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import {APIProvider, Map} from '@vis.gl/react-google-maps';
-import { StationData } from '@/hardcode/stationsData';
-import { STATIONS_DATA } from '@/hardcode/stationsData';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, FlatList, Button, Alert } from 'react-native';
+import { APIProvider, Map } from '@vis.gl/react-google-maps';
 import Markers from './Markers.web';
 import StationDetailsPanel from '@/components/StationDetailsPanel';
 
@@ -261,14 +260,6 @@ export default function MapWeb() {
     }
   };
 
-  const handleAddBikes = (station: StationData, standardCount: number, ebikeCount: number) => {
-    // intentionally left empty
-  };
-
-  const handleMarkerPress = (station: StationData) => {
-    setSelectedStationId(station.id);
-  };
-
   return (
     <View style={styles.container}>
       <APIProvider apiKey={'AIzaSyCXEnqnsX-Sl1DevG3W1N8BBg7D2MdZwsU'}>
@@ -283,22 +274,24 @@ export default function MapWeb() {
           disableDefaultUI={false}
           mapId={'ceb9e4d79f5cb872a4f0b0bd'}
         >
-          <Markers onMarkerPress={handleMarkerPress} stations={stations} />
           <Markers stations={stations} onMarkerPress={setSelectedStation} />
         </Map>
       </APIProvider>
 
       <StationDetailsPanel
-        visible={selectedStation !== null}
-        station={selectedStation}
-        userRole={userRole}
-        hasReservedBike={hasReservedBike}
-        onClose={() => setSelectedStationId(null)}
-        onReserveBike={handleReserveBike}
-        onReturnBike={handleReturnBike}
-        onMoveBike={handleMoveBike}
-        onMaintenanceBike={handleMaintenanceBike}
-        onAddBikes={handleAddBikes}
+          visible={selectedStation !== null}
+          station={selectedStation}
+          userRole={userRole}
+          hasReservedBike={hasReservedBike}
+          reservedBikeId={reservedBikeId} // Add this
+          hasCheckoutBike={hasCheckoutBike}
+          checkoutBikeId={checkoutBikeId}
+          onClose={() => setSelectedStation(null)}
+          onReserveBike={handleReserveBike}
+          onCheckoutBike={handleCheckoutBike}
+          onReturnBike={handleReturnBike}
+          onMoveBike={handleMoveBike}
+          onMaintenanceBike={handleMaintenanceBike}
       />
 
       {/* Destination Station Modal */}

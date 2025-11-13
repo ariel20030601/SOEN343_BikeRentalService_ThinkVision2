@@ -61,7 +61,6 @@ export default function MapWeb() {
   }, []);
 
 
-// ...existing code...
   const handleReserveBike = async (station: StationData, bikeId: string) => {
     // derive riderId from auth user (safe fallbacks)
     const riderId = (user as any)?.id ?? (user as any)?.userId ?? (user as any)?.sub ?? 1;
@@ -99,10 +98,10 @@ export default function MapWeb() {
 
   const handleCheckoutBike = async (station: StationData, bikeId?: string) => {
     const riderId = (user as any)?.id ?? (user as any)?.userId ?? (user as any)?.sub ?? 1;
-    
+
     let finalBikeId: string;
     if (hasReservedBike && reservedBikeId) {
-    // Verify the reserved bike is at this station
+      // Must checkout the reserved bike, and it must be at this station
       const reservedBikeDock = station.docks?.find(d => d.bike?.id === reservedBikeId);
       if (!reservedBikeDock) {
         console.log('Error', 'Your reserved bike is not at this station');
@@ -110,18 +109,17 @@ export default function MapWeb() {
       }
       finalBikeId = reservedBikeId;
     } else {
-      // No reservation - must select a bike that's AVAILABLE (not reserved)
+      // No reservation — must select a bike that exists and is not reserved
       if (!bikeId) {
         console.log('Error', 'Please select a bike to checkout');
         return;
       }
-      
+
       const selectedDock = station.docks?.find(d => d.bike?.id === bikeId);
       if (!selectedDock?.bike) {
         console.log('Error', 'Selected bike not found');
         return;
       }
-      
       if (selectedDock.bike.status === 'RESERVED') {
         console.log('Error', 'This bike is reserved by another rider');
         return;
@@ -130,9 +128,9 @@ export default function MapWeb() {
     }
 
     const body = {
-      riderId,
-      stationId: station.id,
-      bikeId: finalBikeId
+      riderId,                  // Integer on backend
+      stationId: station.id,    // String
+      bikeId: finalBikeId       // String
     };
 
     try {
@@ -146,11 +144,14 @@ export default function MapWeb() {
       if (response.ok) {
         const data = await response.json();
         console.log('Checkout response:', data);
+        // Clear reservation state and set checkout state
         setHasReservedBike(false);
         setReservedBikeId(null);
         setHasCheckoutBike(true);
         setCheckoutBikeId(finalBikeId);
         setSelectedStation(null);
+        // optional: refresh stations so docks update
+        fetchStations().catch(() => {});
         console.log('Success', 'Bike checked out successfully');
       } else {
         const errText = await response.text();
@@ -162,6 +163,7 @@ export default function MapWeb() {
       console.log('Error', 'Failed to checkout bike');
     }
   };
+
 
   const handleReturnBike = async (station: StationData, bikeId: string) => {
     const riderId = (user as any)?.id ?? (user as any)?.userId ?? (user as any)?.sub ?? 1;
@@ -260,6 +262,57 @@ export default function MapWeb() {
     }
   };
 
+  const handleAddBikes = async (
+    station: StationData,
+    counts: { standard: number; eBike: number }
+  ) => {
+    const total = (counts?.standard ?? 0) + (counts?.eBike ?? 0);
+    if (!total) return;
+
+    const baseUrl = 'http://localhost:8080/api/operator/add-bike';
+    const addOne = async (type: 'STANDARD' | 'E_BIKE', idx: number) => {
+      const bikeId = `${station.id}-${type === 'E_BIKE' ? 'EB' : 'SB'}-${Date.now()}-${idx}`;
+      const url =
+        `${baseUrl}?operatorId=${operatorId}` +
+        `&stationId=${encodeURIComponent(station.id)}` +
+        `&bikeId=${encodeURIComponent(bikeId)}` +
+        `&type=${type}`;
+      const res = await fetch(url, { method: 'POST' });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    };
+
+    try {
+      console.log('Adding bikes (sequential):', { stationId: station.id, counts });
+      let added = 0;
+
+      for (let i = 0; i < (counts.standard ?? 0); i++) {
+        try {
+          await addOne('STANDARD', i);
+          added++;
+        } catch (e) {
+          console.error('Add STANDARD failed at', i, e);
+          break;
+        }
+      }
+
+      for (let i = 0; i < (counts.eBike ?? 0); i++) {
+        try {
+          await addOne('E_BIKE', i);
+          added++;
+        } catch (e) {
+          console.error('Add E_BIKE failed at', i, e);
+          break;
+        }
+      }
+
+      await fetchStations();
+      console.log(`Success: added ${added} bikes`);
+    } catch (e) {
+      console.error('Add bikes failed:', e);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <APIProvider apiKey={'AIzaSyCXEnqnsX-Sl1DevG3W1N8BBg7D2MdZwsU'}>
@@ -292,6 +345,7 @@ export default function MapWeb() {
           onReturnBike={handleReturnBike}
           onMoveBike={handleMoveBike}
           onMaintenanceBike={handleMaintenanceBike}
+          onAddBikes={handleAddBikes}
       />
 
       {/* Destination Station Modal */}

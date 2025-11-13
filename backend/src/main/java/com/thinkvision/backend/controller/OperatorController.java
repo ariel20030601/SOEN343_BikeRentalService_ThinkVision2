@@ -3,9 +3,7 @@ package com.thinkvision.backend.controller;
 import com.thinkvision.backend.applicationLayer.bms.DemoDataLoader;
 import com.thinkvision.backend.applicationLayer.bms.OperatorService;
 import com.thinkvision.backend.applicationLayer.dto.EventPublisher;
-import com.thinkvision.backend.entity.Dock;
-import com.thinkvision.backend.entity.Station;
-import com.thinkvision.backend.entity.User;
+import com.thinkvision.backend.entity.*;
 import com.thinkvision.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -60,4 +58,21 @@ public class OperatorController {
         operatorService.resetSystem(operatorId);
         return "System reset to demo baseline successfully.";
     }
+
+    @PostMapping("/add-bike")
+    public Bike addBike(@RequestParam Integer operatorId,
+                        @RequestParam String stationId,
+                        @RequestParam String bikeId,
+                        @RequestParam(required = false) String type) {
+        BikeType bikeType;
+        if (type == null || type.isBlank()) {
+            bikeType = BikeType.STANDARD;
+        } else {
+            try {
+                bikeType = BikeType.valueOf(type.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                bikeType = BikeType.STANDARD;
+            }
+        }
+        return operatorService.addBikeToStation(operatorId, stationId, bikeId, bikeType);}
 }

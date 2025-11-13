@@ -5,6 +5,7 @@ import com.thinkvision.backend.entity.*;
 import com.thinkvision.backend.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -77,7 +78,7 @@ public class OperatorService {
         freeDock.setStatus(DockStatus.OCCUPIED);
         dockRepo.save(freeDock);
 
-        // 8️⃣ Recalculate occupancy
+        // Recalculate occupancy
         stationService.updateOccupancy(fromStationId);
         stationService.updateOccupancy(toStationId);
 
@@ -199,6 +200,67 @@ public class OperatorService {
         demoDataLoader.reloadDemoData();
         eventPublisher.publish("SystemReset", "All data reloaded to demo baseline.");
     }
+
+    /**
+     * Add a new bike to a station
+     */
+    @Transactional
+    public Bike addBikeToStation(Integer operatorId, String stationId, String bikeId, BikeType type) {
+        // Validate operator
+        User operator = userRepo.findById(operatorId)
+                .orElseThrow(() -> new IllegalStateException("Operator not found"));
+        if (!"OPERATOR".equalsIgnoreCase(operator.getRole())) {
+            throw new IllegalStateException("User not authorized to add bikes");
+        }
+
+        // Check bike id uniqueness
+        if (bikeRepo.existsById(bikeId)) {
+            throw new IllegalStateException("Bike id already exists: " + bikeId);
+        }
+
+        // Validate station
+        Station station = stationRepo.findById(stationId)
+                .orElseThrow(() -> new IllegalStateException("Station not found: " + stationId));
+        if (station.getStatus() == StationStatus.OUT_OF_SERVICE) {
+            throw new IllegalStateException("Destination station is out of service");
+        }
+
+        // Find a free dock (managed entity in the current transaction)
+        Dock freeDock = dockRepo.findFirstByStation_IdAndStatus(stationId, DockStatus.EMPTY)
+                .orElseThrow(() -> new IllegalStateException("No free dock available at station: " + stationId));
+
+        // Ensure dock has no lingering bike reference loaded as a different object
+        if (freeDock.getBike() == null) {
+            Optional<Bike> linkedBike = bikeRepo.findByDock_Id(freeDock.getId());
+            linkedBike.ifPresent(freeDock::setBike);
+        }
+        if (freeDock.getBike() != null) {
+            throw new IllegalStateException("Selected dock is not actually free: " + freeDock.getId());
+        }
+
+        // Create bike and persist it first so Hibernate returns a managed instance
+        Bike bike = new Bike();
+        bike.setId(bikeId);
+        bike.setType(type != null ? type : BikeType.STANDARD);
+        bike.setStatus(BikeStatus.AVAILABLE);
+        bike.setDock(freeDock);
+
+        bike = bikeRepo.saveAndFlush(bike); // ensure managed instance in the persistence context
+
+        // Attach managed bike to dock and persist dock
+        freeDock.setBike(bike);
+        freeDock.setStatus(DockStatus.OCCUPIED);
+        dockRepo.save(freeDock);
+
+        // Refresh station occupancy and publish event
+        stationService.updateOccupancy(stationId);
+        eventPublisher.publish("BikeAdded", bikeId);
+
+        System.out.println("Operator " + operator.getUsername() + " added bike " + bikeId + " to station " + stationId);
+        return bike;
+    }
+
+
 
 
 }

@@ -58,6 +58,7 @@ interface StationDetailsPanelProps {
   onReturnBike?: (station: StationData, bikeId: string) => void;
   onMoveBike?: (station: StationData, dockIndex: number) => void;
   onMaintenanceBike?: (station: StationData, dockIndex: number) => void;
+  onAddBikes?: (station: StationData, counts: { standard: number; eBike: number }) => void | Promise<void>;
 }
 
 export default function StationDetailsPanel({
@@ -74,6 +75,7 @@ export default function StationDetailsPanel({
   onReturnBike,
   onMoveBike,
   onMaintenanceBike,
+  onAddBikes,
 }: StationDetailsPanelProps) {
   const [selectedDock, setSelectedDock] = useState<number | null>(null);
 
@@ -198,32 +200,16 @@ export default function StationDetailsPanel({
     setAddModalVisible(true);
   };
 
-  const confirmAddBikes = () => {
-    const toAddTotal = addStandard + addEbike;
-    if (toAddTotal <= 0) return;
-    if (toAddTotal > freeDocks) return;
-
-    const empty = getEmptyIndices();
-    const nextOverlay: Record<number, { type: 'STANDARD' | 'E_BIKE' }> = { ...localAdded };
-
-    // Assign E-BIKEs first, then STANDARDs
-    let remainingE = addEbike;
-    let remainingS = addStandard;
-
-    for (const idx of empty) {
-      if (remainingE > 0) {
-        nextOverlay[idx] = { type: 'E_BIKE' };
-        remainingE--;
-      } else if (remainingS > 0) {
-        nextOverlay[idx] = { type: 'STANDARD' };
-        remainingS--;
-      }
-      if (remainingE === 0 && remainingS === 0) break;
-    }
-
-    setLocalAdded(nextOverlay);
-    setAddModalVisible(false); // auto-close after success
-    resetAddModal();
+  const confirmAddBikes = async () => {
+     const toAddTotal = addStandard + addEbike;
+     if (toAddTotal <= 0) return;
+     if (toAddTotal > freeDocks) return;
+     try{
+      await onAddBikes?.(station, { standard: addStandard, eBike: addEbike});
+     } finally {
+      setAddModalVisible(false);
+      resetAddModal();
+     }
   };
 
   const canAddBikes = freeDocks > 0; // available even if OUT_OF_SERVICE per requirements

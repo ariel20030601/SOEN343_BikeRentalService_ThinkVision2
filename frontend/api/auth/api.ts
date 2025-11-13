@@ -227,3 +227,71 @@ export async function returnBike(
 
   return response.json();
 }
+
+// ---------- Pricing and Billing ----------
+
+export interface PricingPlan {
+  name?: string;
+  pricePerMinute?: number;
+  baseFare?: number;
+}
+
+export interface TripSummaryDTO {
+  tripId: number;
+  riderId?: number;
+  bikeId?: string;
+  startTime?: string;
+  endTime?: string;
+  durationMinutes?: number;
+  cost?: number;
+  pricingPlan?: PricingPlan;
+  [key: string]: any;
+}
+
+// GET /api/prc/getPricingPlans
+export async function getPricingPlans(): Promise<PricingPlan[]> {
+  const res = await fetch(`${PRC_API_URL}/getPricingPlans`, { method: "GET" });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `Failed to load pricing plans (${res.status})`);
+  }
+
+  const raw = await res.json().catch(() => []);
+  if (!Array.isArray(raw)) return [];
+
+  const toNumber = (v: any): number | undefined =>
+    v === null || typeof v === "undefined" ? undefined : Number(v);
+
+  return raw.map((p: any) => {
+    const name = p.planName ;
+    const baseFare = p.baseFare;
+    const pricePerMinute = p.additionalFarePerMinute;
+    return {
+      name,
+      baseFare,
+      pricePerMinute,
+    } as PricingPlan;
+  });
+}
+
+
+// GET /api/prc/summary?tripId=...
+export async function getTripSummary(tripId: number): Promise<TripSummaryDTO> {
+  const url = `${PRC_API_URL}/summary?tripId=${encodeURIComponent(String(tripId))}`;
+  const res = await fetch(url, { method: "GET" });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `Failed to load trip summary (${res.status})`);
+  }
+  return res.json();
+}
+
+// GET /api/prc/history/{userId}
+export async function getBillingHistory(userId: number): Promise<TripSummaryDTO[]> {
+  const res = await fetch(`${PRC_API_URL}/history/${encodeURIComponent(String(userId))}`, { method: "GET" });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `Failed to load billing history (${res.status})`);
+  }
+  return res.json();
+}

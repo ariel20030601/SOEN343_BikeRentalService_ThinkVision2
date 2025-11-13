@@ -1,24 +1,62 @@
 import { useState } from "react";
-import { TouchableOpacity, View, Text, StyleSheet, Modal, Pressable } from "react-native";
+import { TouchableOpacity, View, Text, StyleSheet, Modal, Pressable, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function InfoButton() {
   const [isVisible, setIsVisible] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const handlePress = () => {
+    setErrorMsg(null);
     setIsVisible(true);
   };
 
-  const handleReset = () => {
-    // TODO: Implement reset functionality
-    setIsVisible(false);
-    // Show confirmation or handle reset
+  const operatorId = 2;
+  const isOperator =
+    (user as any)?.role === "operator" ||
+    (user as any)?.role === "OPERATOR" ||
+    (user as any)?.isOperator === true;
+
+  const username =
+    (user as any)?.username ??
+    (user as any)?.name ??
+    (user as any)?.email ??
+    "Guest";
+  const userRole = isOperator ? "Operator" : "Rider";
+
+  const handleReset = async () => {
+    setErrorMsg(null);
+    setIsResetting(true);
+    try {
+      console.log("Resetting system for operator:", operatorId);
+      const res = await fetch(
+        `http://localhost:8080/api/operator/reset-system?operatorId=${operatorId}`,
+        { method: "POST" }
+      );
+      if (!res.ok) {
+        const txt = await res.text();
+        console.error("Reset failed:", txt);
+        setErrorMsg(txt || "Reset failed");
+        return;
+      }
+      console.log("Success", "System reset successfully");
+      setIsVisible(false);
+      // Refresh the app state (web)
+      if (typeof window !== "undefined" && window.location) {
+        window.location.reload();
+      }
+    } catch (e: any) {
+      console.error("Reset error:", e);
+      setErrorMsg(e?.message || "Reset error");
+    } finally {
+      setIsResetting(false);
+    }
   };
 
-  // TODO: Get user data from UserContext
-  const userRole = "Rider"; // Placeholder
-  const username = "JohnDoe"; // Placeholder
-  
+
   // TODO: Get station data from StationContext
   const stationName = "Station A"; // Placeholder
   const bikes = 5; // Placeholder

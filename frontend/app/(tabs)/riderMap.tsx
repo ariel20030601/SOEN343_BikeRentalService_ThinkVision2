@@ -31,7 +31,7 @@ export default function Index() {
       </View>
 
       <View style={styles.mapContainer}>
-        <MapScreen/>
+        <MapScreen userRole="rider"/>
       </View>
 
       <View style={styles.footer}>

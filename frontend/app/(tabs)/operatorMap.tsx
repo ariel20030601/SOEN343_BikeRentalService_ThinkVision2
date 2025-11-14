@@ -30,7 +30,7 @@ export default function Index() {
       </View>
 
       <View style={styles.mapContainer}>
-        <MapScreen/>
+        <MapScreen userRole="operator"/>
       </View>
 
       <View style={styles.footer}>

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Modal, Pressable } from "react-native";
-import { fetchAllUsers, fetchBillingHistory, TripSummary, User } from "@/api/auth/api";
+import { fetchAllUsers, User } from "@/api/auth/dashboardAPI";
+import { fetchBillingHistory, TripSummary } from "@/api/auth/prcAPI";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function History() {

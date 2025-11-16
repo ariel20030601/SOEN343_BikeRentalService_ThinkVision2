@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, FlatList, Button, Alert } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, FlatList, Button, Alert, ScrollView } from 'react-native';
 import { APIProvider, Map } from '@vis.gl/react-google-maps';
 import Markers from './Markers.web';
 import StationDetailsPanel from '@/components/StationDetailsPanel';
+import { reserveBike, checkoutBike, returnBike } from '@/api/auth/bmsAPI';
+import { TripSummaryDTO } from '@/api/auth/histAPI';
+import { fetchStations } from '@/api/auth/dashboardAPI';
+import { getTripSummary } from '@/api/auth/prcAPI';
+
 
 export type StationStatus = "EMPTY" | "OCCUPIED" | "FULL" | "OUT_OF_SERVICE";
 
@@ -38,58 +43,41 @@ export default function MapWeb() {
   const [hasCheckoutBike, setHasCheckoutBike] = useState(false);
   const [checkoutBikeId, setCheckoutBikeId] = useState<string | null>(null);
   const [reservedBikeId, setReservedBikeId] = useState<string | null>(null);
+  const [currentTripId, setCurrentTripId] = useState<number | null>(null);
+  const [showTripSummary, setShowTripSummary] = useState(false);
+  const [tripSummary, setTripSummary] = useState<TripSummaryDTO | null>(null);
+  const [isReturningBike, setIsReturningBike] = useState(false);
   const { user } = useAuth();    
   const operatorId = 2;
   const [showDestinationModal, setShowDestinationModal] = useState(false);
   const [moveBikeSource, setMoveBikeSource] = useState<{station: StationData, bikeId: string} | null>(null);
 
 
-  const fetchStations = async () => {
+  const getStations = async () => {
     try {
         console.log("operatorId:", operatorId);
-        const response = await fetch('http://localhost:8080/api/stations');
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
-        console.log("Fetched stations:", data);
-        setStations(data);
+        const stations = await fetchStations(operatorId);
+        setStations(stations);
       } catch (err) {
         console.error("Failed to fetch stations", err);
       }
   }
   useEffect(() => {
-    fetchStations();
+    getStations();
   }, []);
 
 
   const handleReserveBike = async (station: StationData, bikeId: string) => {
     // derive riderId from auth user (safe fallbacks)
     const riderId = (user as any)?.id ?? (user as any)?.userId ?? (user as any)?.sub ?? 1;
-    
-    const body = {
-      riderId,
-      stationId: station.id,
-      bikeId
-    };
 
     try {
-      console.log('Reserving bike with body:', body);
-      const response = await fetch('http://localhost:8080/api/bikes/reserve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Reserve response:', data);
-        setHasReservedBike(true);
-        setReservedBikeId(bikeId);
-        console.log('Success', 'Bike reserved successfully');
-      } else {
-        const errText = await response.text();
-        console.error('Reserve failed:', errText);
-        console.log('Error', errText || 'Failed to reserve bike');
-      }
+      console.log('Reserving bike:', { riderId, stationId: station.id, bikeId });
+      const reservation = await reserveBike(riderId, station.id, bikeId);
+      console.log('Reserve response:', reservation);
+      setHasReservedBike(true);
+      setReservedBikeId(bikeId);
+      console.log('Success', 'Bike reserved successfully');
     } catch (err) {
       console.error('Reserve error:', err);
       console.log('Error', 'Failed to reserve bike');
@@ -101,7 +89,6 @@ export default function MapWeb() {
 
     let finalBikeId: string;
     if (hasReservedBike && reservedBikeId) {
-      // Must checkout the reserved bike, and it must be at this station
       const reservedBikeDock = station.docks?.find(d => d.bike?.id === reservedBikeId);
       if (!reservedBikeDock) {
         console.log('Error', 'Your reserved bike is not at this station');
@@ -109,12 +96,10 @@ export default function MapWeb() {
       }
       finalBikeId = reservedBikeId;
     } else {
-      // No reservation — must select a bike that exists and is not reserved
       if (!bikeId) {
         console.log('Error', 'Please select a bike to checkout');
         return;
       }
-
       const selectedDock = station.docks?.find(d => d.bike?.id === bikeId);
       if (!selectedDock?.bike) {
         console.log('Error', 'Selected bike not found');
@@ -127,79 +112,64 @@ export default function MapWeb() {
       finalBikeId = bikeId;
     }
 
-    const body = {
-      riderId,                  // Integer on backend
-      stationId: station.id,    // String
-      bikeId: finalBikeId       // String
-    };
-
     try {
-      console.log('Checkout bike with body:', body);
-      const response = await fetch('http://localhost:8080/api/bikes/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Checkout response:', data);
-        // Clear reservation state and set checkout state
-        setHasReservedBike(false);
-        setReservedBikeId(null);
-        setHasCheckoutBike(true);
-        setCheckoutBikeId(finalBikeId);
-        setSelectedStation(null);
-        // optional: refresh stations so docks update
-        fetchStations().catch(() => {});
-        console.log('Success', 'Bike checked out successfully');
-      } else {
-        const errText = await response.text();
-        console.error('Checkout failed:', errText);
-        console.log('Error', errText || 'Failed to checkout bike');
-      }
+      console.log('Checkout bike:', { riderId, stationId: station.id, bikeId: finalBikeId });
+      const trip = await checkoutBike(riderId, station.id, finalBikeId);
+      console.log('Checkout response:', trip);
+      
+      // Clear reservation state and set checkout state
+      setHasReservedBike(false);
+      setReservedBikeId(null);
+      setHasCheckoutBike(true);
+      setCheckoutBikeId(finalBikeId);
+      setCurrentTripId(trip.id);
+      setSelectedStation(null);
+      
+      // Refresh stations so docks update
+      getStations().catch(() => {});
+      console.log('Success', 'Bike checked out successfully');
     } catch (err) {
       console.error('Checkout error:', err);
-      console.log('Error', 'Failed to checkout bike');
+      console.log('Error', err instanceof Error ? err.message : 'Failed to checkout bike');
     }
   };
 
 
   const handleReturnBike = async (station: StationData, bikeId: string) => {
     const riderId = (user as any)?.id ?? (user as any)?.userId ?? (user as any)?.sub ?? 1;
-
-    const body = {
-      riderId,
-      stationId: station.id,
-      bikeId
-    };
-
+    setIsReturningBike(true);
     try {
-      console.log('Returning bike with body:', body);
-      const response = await fetch('http://localhost:8080/api/bikes/return', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      console.log('Returning bike:', { riderId, stationId: station.id, bikeId });
+      const trip = await returnBike(riderId, station.id, bikeId);
+      console.log('Return response:', trip);
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Return response:', data);
-        setHasCheckoutBike(false);
-        setCheckoutBikeId(null);
-        console.log('Success', 'Bike returned successfully');
+      setHasCheckoutBike(false);
+      setCheckoutBikeId(null);
+
+      if (currentTripId) {
+        try {
+          const summary = await getTripSummary(currentTripId);
+          console.log('Trip summary from backend:', JSON.stringify(summary, null, 2));
+          setTripSummary(summary);
+          setShowTripSummary(true);
+          setCurrentTripId(null);
+        } catch (err) {
+          console.error('Failed to fetch trip summary:', err);
+          console.log('Success', 'Bike returned successfully');
+        }
       } else {
-        const errText = await response.text();
-        console.error('Return failed:', errText);
-        console.log('Error', errText || 'Failed to return bike');
+        console.log('Success', 'Bike returned successfully');
       }
+      setSelectedStation(null);
+      getStations().catch(() => {});
     } catch (err) {
       console.error('Return error:', err);
-      console.log('Error', 'Failed to return bike');
+      console.log('Error', err instanceof Error ? err.message : 'Failed to return bike');
+    } finally {
+      setIsReturningBike(false);
     }
   };
 
-  // Show modal after clicking Move Bike
   const handleMoveBike = (station: StationData, dockIndex: number) => {
     const dock = station.docks?.[dockIndex];
     if (!dock?.bike) {
@@ -227,7 +197,7 @@ export default function MapWeb() {
       console.log('Move bike response:', response);
       if (response.ok) {
         console.error('Success', 'Bike moved successfully!');
-        await fetchStations();
+        await getStations();
       } else {
         const errorText = await response.text();
         console.error('Error', errorText);
@@ -306,11 +276,24 @@ export default function MapWeb() {
         }
       }
 
-      await fetchStations();
+      await getStations();
       console.log(`Success: added ${added} bikes`);
     } catch (e) {
       console.error('Add bikes failed:', e);
     }
+  };
+
+  const formatDuration = (minutes?: number) => {
+    if (!minutes) return '0 min';
+    if (minutes < 60) return `${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}h ${mins}m`;
+  };
+
+  const formatCurrency = (amount?: number) => {
+    if (amount === undefined || amount === null) return '$0.00';
+    return `$${amount.toFixed(2)}`;
   };
 
   return (
@@ -339,6 +322,7 @@ export default function MapWeb() {
           reservedBikeId={reservedBikeId} // Add this
           hasCheckoutBike={hasCheckoutBike}
           checkoutBikeId={checkoutBikeId}
+          loading={isReturningBike}
           onClose={() => setSelectedStation(null)}
           onReserveBike={handleReserveBike}
           onCheckoutBike={handleCheckoutBike}
@@ -347,6 +331,69 @@ export default function MapWeb() {
           onMaintenanceBike={handleMaintenanceBike}
           onAddBikes={handleAddBikes}
       />
+
+      {/* Trip Summary Modal */}
+      <Modal visible={showTripSummary} animationType="fade" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryTitle}>🚴 Trip Summary</Text>
+            
+            <ScrollView style={styles.summaryContent}>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Trip ID:</Text>
+                <Text style={styles.summaryValue}>#{tripSummary?.tripId}</Text>
+              </View>
+              
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Bike Type:</Text>
+                <Text style={styles.summaryValue}>
+                  {(tripSummary as any)?.bikeType === 'E_BIKE' ? '⚡ E-Bike' : '🚲 Standard'}
+                </Text>
+              </View>
+              
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>From:</Text>
+                <Text style={styles.summaryValue}>
+                  {(tripSummary as any)?.startStationName || 'N/A'}
+                </Text>
+              </View>
+              
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>To:</Text>
+                <Text style={styles.summaryValue}>
+                  {(tripSummary as any)?.endStationName || 'N/A'}
+                </Text>
+              </View>
+              
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Duration:</Text>
+                <Text style={styles.summaryValue}>
+                  {formatDuration(tripSummary?.durationMinutes)}
+                </Text>
+              </View>
+              
+              <View style={styles.summaryDivider} />
+              
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryTotalLabel}>Total Cost:</Text>
+                <Text style={styles.summaryTotalValue}>
+                  {formatCurrency(tripSummary?.cost)}
+                </Text>
+              </View>
+            </ScrollView>
+            
+            <TouchableOpacity 
+              style={styles.summaryButton}
+              onPress={() => {
+                setShowTripSummary(false);
+                setTripSummary(null);
+              }}
+            >
+              <Text style={styles.summaryButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Destination Station Modal */}
       <Modal visible={showDestinationModal} animationType="slide" transparent>
@@ -385,5 +432,101 @@ const styles = StyleSheet.create({
   map: {
     width: '100%',
     height: '100%',
+  },
+    modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  loadingCard: {
+  backgroundColor: 'white',
+  padding: 28,
+  borderRadius: 16,
+  width: 250,
+  alignItems: 'center',
+  justifyContent: 'center',
+
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.25,
+  shadowRadius: 6,
+  elevation: 10,
+  },
+
+  loadingText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+
+  loadingSubtext: {
+    fontSize: 16,
+    color: '#666',
+  },
+  summaryCard: {
+    backgroundColor: 'white',
+    padding: 24,
+    borderRadius: 16,
+    width: '90%',
+    maxWidth: 400,
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  summaryTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+    color: '#333',
+  },
+  summaryContent: {
+    flex: 1,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+  },
+  summaryLabel: {
+    fontSize: 16,
+    color: '#666',
+  },
+  summaryValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  summaryDivider: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+    marginVertical: 12,
+  },
+  summaryTotalLabel: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  summaryTotalValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2196F3',
+  },
+  summaryButton: {
+    backgroundColor: '#2196F3',
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  summaryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

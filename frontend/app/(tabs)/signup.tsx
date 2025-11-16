@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { router } from 'expo-router';
 import { Button, StyleSheet, TextInput, View, Modal, Text } from 'react-native';
 import CreditCardScreen from '../../components/CreditCardScreen';
-import { register, checkUsername } from '../../api/auth/api';
+import { register, checkUsername } from '../../api/auth/loginAPI';
 
 
 export default function SignUp() {

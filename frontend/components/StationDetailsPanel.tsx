@@ -52,6 +52,7 @@ interface StationDetailsPanelProps {
   reservedBikeId?: string | null; // Track which bike is reserved
   hasCheckoutBike?: boolean;
   checkoutBikeId?: string | null;
+  loading?: boolean;
   onClose: () => void;
   onReserveBike?: (station: StationData, bikeId: string) => void;
   onCheckoutBike?: (station: StationData, bikeId?: string) => void;
@@ -68,7 +69,8 @@ export default function StationDetailsPanel({
   hasReservedBike = false,
   reservedBikeId = null,
   hasCheckoutBike = false,
-  checkoutBikeId = null, // Add this
+  checkoutBikeId = null,
+  loading,
   onClose,
   onReserveBike,
   onCheckoutBike,
@@ -225,6 +227,11 @@ export default function StationDetailsPanel({
     >
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable style={styles.panel} onPress={(e) => e.stopPropagation()}>
+          {loading && (
+            <View style={styles.loadingOverlay}>
+              <Text style={styles.loadingText}>Loading...</Text>
+            </View>
+          )}
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
@@ -517,6 +524,24 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     maxHeight: '85%',
     paddingTop: 20,
+  },
+  loadingOverlay: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(255,255,255,0.7)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 1000,
+  borderTopLeftRadius: 20,
+  borderTopRightRadius: 20,
+  },
+  loadingText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
   },
   header: {
     flexDirection: 'row',

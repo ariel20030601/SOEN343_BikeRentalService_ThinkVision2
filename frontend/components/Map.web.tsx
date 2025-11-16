@@ -46,6 +46,7 @@ export default function MapWeb() {
   const [currentTripId, setCurrentTripId] = useState<number | null>(null);
   const [showTripSummary, setShowTripSummary] = useState(false);
   const [tripSummary, setTripSummary] = useState<TripSummaryDTO | null>(null);
+  const [isReturningBike, setIsReturningBike] = useState(false);
   const { user } = useAuth();    
   const operatorId = 2;
   const [showDestinationModal, setShowDestinationModal] = useState(false);
@@ -136,7 +137,7 @@ export default function MapWeb() {
 
   const handleReturnBike = async (station: StationData, bikeId: string) => {
     const riderId = (user as any)?.id ?? (user as any)?.userId ?? (user as any)?.sub ?? 1;
-
+    setIsReturningBike(true);
     try {
       console.log('Returning bike:', { riderId, stationId: station.id, bikeId });
       const trip = await returnBike(riderId, station.id, bikeId);
@@ -164,6 +165,8 @@ export default function MapWeb() {
     } catch (err) {
       console.error('Return error:', err);
       console.log('Error', err instanceof Error ? err.message : 'Failed to return bike');
+    } finally {
+      setIsReturningBike(false);
     }
   };
 
@@ -288,6 +291,11 @@ export default function MapWeb() {
     return `${hours}h ${mins}m`;
   };
 
+  const formatCurrency = (amount?: number) => {
+    if (amount === undefined || amount === null) return '$0.00';
+    return `$${amount.toFixed(2)}`;
+  };
+
   return (
     <View style={styles.container}>
       <APIProvider apiKey={'AIzaSyCXEnqnsX-Sl1DevG3W1N8BBg7D2MdZwsU'}>
@@ -314,6 +322,7 @@ export default function MapWeb() {
           reservedBikeId={reservedBikeId} // Add this
           hasCheckoutBike={hasCheckoutBike}
           checkoutBikeId={checkoutBikeId}
+          loading={isReturningBike}
           onClose={() => setSelectedStation(null)}
           onReserveBike={handleReserveBike}
           onCheckoutBike={handleCheckoutBike}
@@ -336,14 +345,39 @@ export default function MapWeb() {
               </View>
               
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Bike ID:</Text>
-                <Text style={styles.summaryValue}>{tripSummary?.bikeId}</Text>
+                <Text style={styles.summaryLabel}>Bike Type:</Text>
+                <Text style={styles.summaryValue}>
+                  {(tripSummary as any)?.bikeType === 'E_BIKE' ? '⚡ E-Bike' : '🚲 Standard'}
+                </Text>
+              </View>
+              
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>From:</Text>
+                <Text style={styles.summaryValue}>
+                  {(tripSummary as any)?.startStationName || 'N/A'}
+                </Text>
+              </View>
+              
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>To:</Text>
+                <Text style={styles.summaryValue}>
+                  {(tripSummary as any)?.endStationName || 'N/A'}
+                </Text>
               </View>
               
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Duration:</Text>
                 <Text style={styles.summaryValue}>
                   {formatDuration(tripSummary?.durationMinutes)}
+                </Text>
+              </View>
+              
+              <View style={styles.summaryDivider} />
+              
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryTotalLabel}>Total Cost:</Text>
+                <Text style={styles.summaryTotalValue}>
+                  {formatCurrency(tripSummary?.cost)}
                 </Text>
               </View>
             </ScrollView>
@@ -404,6 +438,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  loadingCard: {
+  backgroundColor: 'white',
+  padding: 28,
+  borderRadius: 16,
+  width: 250,
+  alignItems: 'center',
+  justifyContent: 'center',
+
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.25,
+  shadowRadius: 6,
+  elevation: 10,
+  },
+
+  loadingText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+
+  loadingSubtext: {
+    fontSize: 16,
+    color: '#666',
   },
   summaryCard: {
     backgroundColor: 'white',

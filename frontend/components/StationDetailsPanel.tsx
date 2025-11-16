@@ -388,7 +388,6 @@ export default function StationDetailsPanel({
                       if (checkoutBikeId) {
                         onReturnBike?.(station, checkoutBikeId);
                         setSelectedDock(null); 
-                        window.location.reload();
                       }
                     }}
                     disabled={!canReturn}

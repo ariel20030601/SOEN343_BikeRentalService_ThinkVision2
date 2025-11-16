@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Button, StyleSheet, TextInput, View, Text, Alert } from 'react-native';
-import { login } from "@/api/auth/api";
+import { login } from "@/api/auth/loginAPI";
 import { useAuth } from '@/contexts/AuthContext';
 
 const styles = StyleSheet.create({

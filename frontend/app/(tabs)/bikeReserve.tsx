@@ -8,7 +8,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from "react-native";
-import { reserveBike, checkoutBike, returnBike } from "@/api/auth/api";
+import { reserveBike, checkoutBike, returnBike } from "@/api/auth/bmsAPI";
 
 type BikeStatus = "AVAILABLE" | "RESERVED" | "ON_TRIP";
 

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { getPricingPlans, PricingPlan } from "../../api/auth/api";
+import { getPricingPlans, PricingPlan } from "../../api/auth/prcAPI";
 
 export default function Pricing() {
   const [plans, setPlans] = useState<PricingPlan[]>([]);

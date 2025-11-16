@@ -148,6 +148,7 @@ export default function MapWeb() {
       if (currentTripId) {
         try {
           const summary = await getTripSummary(currentTripId);
+          console.log('Trip summary from backend:', JSON.stringify(summary, null, 2));
           setTripSummary(summary);
           setShowTripSummary(true);
           setCurrentTripId(null);

@@ -46,8 +46,9 @@ export default function LogIn() {
     try {
       const response = await login({ username, password });
       
-      // Store auth data in context
-      await authLogin({ username }, response.token);
+      // Store auth data in context: include server-provided id and username
+      const authUser = { id: String(response.user.id), username: response.user.username };
+      await authLogin(authUser, response.token);
       
       // Navigate to home page
       router.replace('/(tabs)');

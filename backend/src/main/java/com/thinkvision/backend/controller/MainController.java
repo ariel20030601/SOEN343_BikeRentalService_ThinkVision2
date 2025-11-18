@@ -11,7 +11,6 @@ import com.thinkvision.backend.applicationLayer.AuthResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -49,8 +48,9 @@ public class MainController {
     public ResponseEntity<?> login(@RequestBody LoginRequest req) {
         var userOpt = authService.authenticate(req);
         if (userOpt.isPresent()) {
-            var token = jwtUtils.generateToken(userOpt.get().getUsername());
-            return ResponseEntity.ok(new AuthResponse(token));
+            var user = userOpt.get();
+            var token = jwtUtils.generateToken(user.getUsername());
+            return ResponseEntity.ok(new AuthResponse(token, user));
         } else {
             return ResponseEntity.status(401).body("Invalid username or password");
         }

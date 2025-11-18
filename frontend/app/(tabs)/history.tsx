@@ -15,7 +15,7 @@ export default function History() {
   const [startDate, setStartDate] = useState<string>(""); // YYYY-MM-DD
   const [endDate, setEndDate] = useState<string>("");     // YYYY-MM-DD
   const [bikeFilter, setBikeFilter] = useState<"ALL" | "STANDARD" | "E_BIKE">("ALL");
-  // Operator state to enable viewing other users' rides
+  // Operator state to enable viewing other user rides
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [isOperator, setIsOperator] = useState<boolean>(false);
   const [selectedUserName, setSelectedUserName] = useState<string>("");
@@ -34,7 +34,7 @@ export default function History() {
         setAllUsers(users);
         const me = users.find(u => u.username === username);
         if (!me) throw new Error("Current user not found");
-        // Determine role from backend user record (role field may exist)
+        
         const role = ((me as any).role || "").toString().toUpperCase();
         const operator = role === "OPERATOR";
         setIsOperator(operator);
@@ -101,7 +101,7 @@ export default function History() {
     }
   };
 
-  // Operator apply action removed
+  
 
   const parseDate = (s: string, endOfDay = false) => {
     if (!s) return undefined as number | undefined;

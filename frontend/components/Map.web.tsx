@@ -38,7 +38,7 @@ export interface StationData {
 export default function MapWeb() {
   const [stations, setStations] = useState<StationData[]>([]);
   const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
-  const [userRole] = useState<'rider' | 'operator'>('rider'); // TODO: Get from context
+  const [userRole] = useState<'rider' | 'operator'>('operator'); // TODO: Get from context
   const [hasReservedBike, setHasReservedBike] = useState(false);
   const [hasCheckoutBike, setHasCheckoutBike] = useState(false);
   const [checkoutBikeId, setCheckoutBikeId] = useState<string | null>(null);

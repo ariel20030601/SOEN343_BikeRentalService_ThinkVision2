@@ -25,10 +25,17 @@ public interface ReservationRepository extends JpaRepository<Reservation, String
 
     long countByRiderAndStatusAndReservedAtAfter(User rider, ReservationStatus status, Instant after);
 
+    long countByRiderAndStatusAndReturnedAtBetween(User rider, ReservationStatus status, Instant from, Instant to);
+
     long countByRiderAndStatusAndReservedAtBetween(User rider, ReservationStatus status, Instant from, Instant to);
 
     long countByRiderAndStatusInAndReservedAtAfter(User rider, List<ReservationStatus> statuses, Instant after);
 
     List<Reservation> findByRider(User rider);
+
+    Optional<Reservation> findFirstByRiderAndBikeIdAndStatus(User user, String bikeId, ReservationStatus reservationStatus);
+
+    long countByRiderAndStatusAndReturnedAtAfter(User rider, ReservationStatus status, Instant after);
 }
+
 

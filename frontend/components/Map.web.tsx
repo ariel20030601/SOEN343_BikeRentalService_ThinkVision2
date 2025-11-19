@@ -9,6 +9,35 @@ import { TripSummaryDTO } from '@/api/auth/histAPI';
 import { fetchStations } from '@/api/auth/dashboardAPI';
 import { getTripSummary } from '@/api/auth/prcAPI';
 
+const STORAGE_KEYS = {
+  HAS_RESERVED: 'bibixi_has_reserved_bike',
+  RESERVED_BIKE_ID: 'bibixi_reserved_bike_id',
+  HAS_CHECKOUT: 'bibixi_has_checkout_bike',
+  CHECKOUT_BIKE_ID: 'bibixi_checkout_bike_id',
+  CURRENT_TRIP_ID: 'bibixi_current_trip_id',
+};
+
+const saveToStorage = (key: string, value: any) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.error('Failed to save to storage:', e);
+  }
+};
+
+const loadFromStorage = (key: string) => {
+  try {
+    const item = localStorage.getItem(key);
+    return item ? JSON.parse(item) : null;
+  } catch (e) {
+    console.error('Failed to load from storage:', e);
+    return null;
+  }
+};
+
+const clearStorage = () => {
+  Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
+};
 
 export type StationStatus = "EMPTY" | "OCCUPIED" | "FULL" | "OUT_OF_SERVICE";
 
@@ -38,12 +67,22 @@ export interface StationData {
 export default function MapWeb() {
   const [stations, setStations] = useState<StationData[]>([]);
   const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
-  const [userRole] = useState<'rider' | 'operator'>('operator'); // TODO: Get from context
-  const [hasReservedBike, setHasReservedBike] = useState(false);
-  const [hasCheckoutBike, setHasCheckoutBike] = useState(false);
-  const [checkoutBikeId, setCheckoutBikeId] = useState<string | null>(null);
-  const [reservedBikeId, setReservedBikeId] = useState<string | null>(null);
-  const [currentTripId, setCurrentTripId] = useState<number | null>(null);
+  const [userRole] = useState<'rider' | 'operator'>('rider'); // TODO: Get from context
+  const [hasReservedBike, setHasReservedBike] = useState(() => 
+    loadFromStorage(STORAGE_KEYS.HAS_RESERVED) || false
+  );
+  const [hasCheckoutBike, setHasCheckoutBike] = useState(() => 
+    loadFromStorage(STORAGE_KEYS.HAS_CHECKOUT) || false
+  );
+  const [checkoutBikeId, setCheckoutBikeId] = useState<string | null>(() => 
+    loadFromStorage(STORAGE_KEYS.CHECKOUT_BIKE_ID)
+  );
+  const [reservedBikeId, setReservedBikeId] = useState<string | null>(() => 
+    loadFromStorage(STORAGE_KEYS.RESERVED_BIKE_ID)
+  );
+  const [currentTripId, setCurrentTripId] = useState<number | null>(() => 
+    loadFromStorage(STORAGE_KEYS.CURRENT_TRIP_ID)
+  );
   const [showTripSummary, setShowTripSummary] = useState(false);
   const [tripSummary, setTripSummary] = useState<TripSummaryDTO | null>(null);
   const [isReturningBike, setIsReturningBike] = useState(false);
@@ -62,9 +101,30 @@ export default function MapWeb() {
         console.error("Failed to fetch stations", err);
       }
   }
+
   useEffect(() => {
     getStations();
   }, []);
+
+    useEffect(() => {
+    saveToStorage(STORAGE_KEYS.HAS_RESERVED, hasReservedBike);
+  }, [hasReservedBike]);
+
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.RESERVED_BIKE_ID, reservedBikeId);
+  }, [reservedBikeId]);
+
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.HAS_CHECKOUT, hasCheckoutBike);
+  }, [hasCheckoutBike]);
+
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.CHECKOUT_BIKE_ID, checkoutBikeId);
+  }, [checkoutBikeId]);
+
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.CURRENT_TRIP_ID, currentTripId);
+  }, [currentTripId]);
 
 
   const handleReserveBike = async (station: StationData, bikeId: string) => {
@@ -75,8 +135,10 @@ export default function MapWeb() {
       console.log('Reserving bike:', { riderId, stationId: station.id, bikeId });
       const reservation = await reserveBike(riderId, station.id, bikeId);
       console.log('Reserve response:', reservation);
+
       setHasReservedBike(true);
       setReservedBikeId(bikeId);
+
       console.log('Success', 'Bike reserved successfully');
     } catch (err) {
       console.error('Reserve error:', err);
@@ -123,9 +185,9 @@ export default function MapWeb() {
       setHasCheckoutBike(true);
       setCheckoutBikeId(finalBikeId);
       setCurrentTripId(trip.id);
-      setSelectedStation(null);
       
       // Refresh stations so docks update
+      setSelectedStation(null);
       getStations().catch(() => {});
       console.log('Success', 'Bike checked out successfully');
     } catch (err) {
@@ -138,6 +200,7 @@ export default function MapWeb() {
   const handleReturnBike = async (station: StationData, bikeId: string) => {
     const riderId = (user as any)?.id ?? (user as any)?.userId ?? (user as any)?.sub ?? 1;
     setIsReturningBike(true);
+    
     try {
       console.log('Returning bike:', { riderId, stationId: station.id, bikeId });
       const trip = await returnBike(riderId, station.id, bikeId);

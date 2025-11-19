@@ -32,6 +32,10 @@ public class User {
 
     private String address;
 
+    //TODO: update api to handle flex dollar balance
+    @Column(name = "flex_balance")
+    private Double flexBalance;
+
     public User() {}
 
     public Integer getId() {
@@ -104,6 +108,14 @@ public class User {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public double getFlexBalance() {
+        return flexBalance == null ? 0.0 : flexBalance;
+    }
+
+    public void setFlexBalance(double flexDollarBalance) {
+        this.flexBalance = flexDollarBalance;
     }
 }
 

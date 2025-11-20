@@ -41,13 +41,6 @@ public class Trip {
     @Column(name = "flex_applied", nullable = false)
     private boolean flexApplied = false;
 
-    public boolean isFlexApplied() {
-        return flexApplied;
-    }
-
-    public void setFlexApplied(boolean flexApplied) {
-        this.flexApplied = flexApplied;
-    }
 
     public Trip() {}
 

@@ -1,6 +1,7 @@
 package com.thinkvision.backend.applicationLayer.balancingPrice;
 
 import com.thinkvision.backend.applicationLayer.dto.TripEndedEvent;
+import com.thinkvision.backend.applicationLayer.dto.TripStartedEvent;
 import com.thinkvision.backend.entity.Station;
 import com.thinkvision.backend.entity.Trip;
 import com.thinkvision.backend.entity.User;
@@ -47,8 +48,8 @@ public class FlexDollarService {
     }
 
     @EventListener
-    public void spendFlexDollars(TripEndedEvent tripEndedEvent) {
-        Optional<Trip> tripOpt = tripRepo.findById(tripEndedEvent.getTripId());
+    public void spendFlexDollars(TripStartedEvent tripStartedEvent) {
+        Optional<Trip> tripOpt = tripRepo.findById(tripStartedEvent.getTripId());
         if (tripOpt.isEmpty()) return;
         Trip trip = tripOpt.get();
 
@@ -56,10 +57,12 @@ public class FlexDollarService {
         if (user == null) return;
 
         if (user.getFlexBalance() != 0) {
-            user.setFlexBalance(user.getFlexBalance() - 1.0);
+            double newBalance = user.getFlexBalance() - 1.0;
+            user.setFlexBalance(newBalance);
             userRepo.save(user);
 
             trip.setFlexApplied(true);
+            tripRepo.save(trip);
         }
     }
 }

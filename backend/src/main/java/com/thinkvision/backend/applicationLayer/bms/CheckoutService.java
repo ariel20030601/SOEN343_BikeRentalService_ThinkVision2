@@ -1,9 +1,11 @@
 package com.thinkvision.backend.applicationLayer.bms;
 
 import com.thinkvision.backend.applicationLayer.dto.EventPublisher;
+import com.thinkvision.backend.applicationLayer.dto.TripStartedEvent;
 import com.thinkvision.backend.entity.*;
 import com.thinkvision.backend.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -29,6 +31,9 @@ public class CheckoutService {
 
     @Autowired
     private EventPublisher eventPublisher;
+
+    @Autowired
+    private ApplicationEventPublisher applicationEventPublisher;
 
     @Autowired
     private StationService stationService;
@@ -81,6 +86,8 @@ public class CheckoutService {
 
         // Step 6: Update station occupancy
         stationService.updateOccupancy(stationId);
+
+        applicationEventPublisher.publishEvent(new TripStartedEvent(trip.getId()));
 
         eventPublisher.publish("TripStarted", trip.getId());
         return trip;

@@ -52,6 +52,11 @@ public class BillCalculator {
         PricingPlan pricingPlan = determinePricingPlan(bike);
         double cost = pricingPlan.getFare(minutes);
 
+        // if a flex dollar was applied at trip start, reduce cost by 1.0 (not below 0)
+        if (trip.isFlexApplied()) {
+            cost = Math.max(0.0, cost - 1.0);
+        }
+
         // publish cost computed event for trip summary
         applicationEventPublisher.publishEvent(new BillComputedEvent(trip, bike, cost));
 

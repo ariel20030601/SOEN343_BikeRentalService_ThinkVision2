@@ -9,9 +9,11 @@ import com.thinkvision.backend.repository.TripRepository;
 import com.thinkvision.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
+@Service
 public class FlexDollarService {
 
     @Autowired
@@ -38,7 +40,8 @@ public class FlexDollarService {
 
         // -1 because bike has just been returned
         if (endStation.getAvailableBikes() - 1 < endStation.getCapacity() * 0.25) {
-            user.setFlexBalance(user.getFlexBalance() + 1.0);
+            double newBalance = user.getFlexBalance() + 1.0;
+            user.setFlexBalance(newBalance);
             userRepo.save(user);
         }
     }
@@ -55,6 +58,8 @@ public class FlexDollarService {
         if (user.getFlexBalance() != 0) {
             user.setFlexBalance(user.getFlexBalance() - 1.0);
             userRepo.save(user);
+
+            trip.setFlexApplied(true);
         }
     }
 }

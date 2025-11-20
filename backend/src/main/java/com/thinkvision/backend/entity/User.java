@@ -113,7 +113,7 @@ public class User {
         return flexBalance == null ? 0.0 : flexBalance;
     }
 
-    public void setFlexBalance(double flexDollarBalance) {
+    public void setFlexBalance(Double flexDollarBalance) {
         this.flexBalance = flexDollarBalance;
     }
 }

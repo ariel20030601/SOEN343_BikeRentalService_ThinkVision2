@@ -38,6 +38,17 @@ public class Trip {
     @Column(name = "active")
     private boolean active;
 
+    @Transient
+    private boolean flexApplied = false;
+
+    public boolean isFlexApplied() {
+        return flexApplied;
+    }
+
+    public void setFlexApplied(boolean flexApplied) {
+        this.flexApplied = flexApplied;
+    }
+
     public Trip() {}
 
 }

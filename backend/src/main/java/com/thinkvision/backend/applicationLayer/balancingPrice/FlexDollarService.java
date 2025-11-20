@@ -56,7 +56,7 @@ public class FlexDollarService {
         User user = userRepo.findById(trip.getRider().getId()).orElse(null);
         if (user == null) return;
 
-        if (user.getFlexBalance() != 0) {
+        if (user.getFlexBalance() > 0) {
             double newBalance = user.getFlexBalance() - 1.0;
             user.setFlexBalance(newBalance);
             userRepo.save(user);

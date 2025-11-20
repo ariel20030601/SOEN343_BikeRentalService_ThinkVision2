@@ -1,5 +1,4 @@
 // java
-// File: src/main/java/com/thinkvision/backend/applicationLayer/loyalty/LoyaltyService.java
 package com.thinkvision.backend.applicationLayer.loyalty;
 
 import com.thinkvision.backend.entity.*;
@@ -9,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.*;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Arrays;
 import java.util.List;
 
@@ -76,7 +76,13 @@ public class LoyaltyService {
         if (br001_noMissedLastYear && br002_allReturned && br003_over10Trips) {
             boolean silverEligible = checkSilver(user, now);
             System.out.println("determineTier: bronze passed, silverEligible=" + silverEligible);
-            return silverEligible ? LoyaltyTier.SILVER : LoyaltyTier.BRONZE;
+            if (silverEligible) {
+                boolean goldEligible = checkGold(user, now);
+                System.out.println("determineTier: silver passed, goldEligible=" + goldEligible);
+                return goldEligible ? LoyaltyTier.GOLD : LoyaltyTier.SILVER;
+            } else {
+                return LoyaltyTier.BRONZE;
+            }
         } else {
             System.out.println("determineTier: not eligible for Bronze (br001=" + br001_noMissedLastYear +
                     ", br002=" + br002_allReturned + ", br003=" + br003_over10Trips + ")");
@@ -111,6 +117,34 @@ public class LoyaltyService {
 
         System.out.println("checkSilver: sl002=" + sl002 + ", sl003=" + sl003 + " -> silverEligible=" + (sl002 && sl003));
         return sl002 && sl003;
+    }
+
+    /**
+     * Gold eligibility:
+     * - Must already meet Silver criteria (handled by caller)
+     * - Must surpass 5 returned trips every week for the last 3 months (13 calendar weeks)
+     */
+    private boolean checkGold(User user, Instant now) {
+        ZonedDateTime zNow = ZonedDateTime.ofInstant(now, ZoneId.systemDefault());
+        for (int i = 0; i < 13; i++) {
+            ZonedDateTime reference = zNow.minusWeeks(i);
+            // get Monday of that week (calendar week)
+            LocalDate weekStartDate = reference.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).toLocalDate();
+            LocalDate weekEndDate = weekStartDate.plusDays(6);
+            LocalDateTime startLdt = weekStartDate.atStartOfDay();
+            LocalDateTime endLdt = weekEndDate.atTime(LocalTime.MAX);
+            Instant from = startLdt.atZone(ZoneId.systemDefault()).toInstant();
+            Instant to = endLdt.atZone(ZoneId.systemDefault()).toInstant();
+
+            long returnedCount = reservationRepository.countByRiderAndStatusAndReturnedAtBetween(user, ReservationStatus.RETURNED, from, to);
+            System.out.println("checkGold: weekStart=" + weekStartDate + " returnedCount=" + returnedCount);
+            if (returnedCount <= 5) {
+                System.out.println("checkGold: failed for week starting " + weekStartDate + " (returnedCount <= 5)");
+                return false;
+            }
+        }
+        System.out.println("checkGold: passed all weeks -> goldEligible=true");
+        return true;
     }
 
     private String safeGetUsername(User user) {

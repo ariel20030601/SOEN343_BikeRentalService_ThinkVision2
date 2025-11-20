@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { TouchableOpacity, View, Text, StyleSheet, Modal, Pressable, ActivityIndicator } from "react-native";
+import { TouchableOpacity, View, Text, StyleSheet, Modal, Pressable, } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -9,16 +9,28 @@ export default function InfoButton() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const { user } = useAuth();
 
+  // 🧪 TESTING: Override user to be operator
+  const testUser = {
+    ...user,
+    role: "operator",
+    username: "test-operator"
+  };
+  
   const handlePress = () => {
     setErrorMsg(null);
     setIsVisible(true);
   };
 
   const operatorId = 2;
+
   const isOperator =
-    (user as any)?.role === "operator" ||
-    (user as any)?.role === "OPERATOR" ||
-    (user as any)?.isOperator === true;
+    (testUser as any)?.role === "operator" ||  // Change user to testUser
+    (testUser as any)?.role === "OPERATOR" ||
+    (testUser as any)?.isOperator === true;
+  // const isOperator =
+  //   (user as any)?.role === "operator" ||
+  //   (user as any)?.role === "OPERATOR" ||
+  //   (user as any)?.isOperator === true;
 
   const username =
     (user as any)?.username ??
@@ -103,22 +115,26 @@ export default function InfoButton() {
                 <Text style={styles.infoText}>Capacity: {capacity}</Text>
                 <Text style={styles.infoText}>Free Docks: {freeDocks}</Text>
               </View>
+
+              {errorMsg && (
+                <View style={styles.errorContainer}>
+                  <Ionicons name="alert-circle" size={20} color="#ef4444" />
+                  <Text style={styles.errorText}>{errorMsg}</Text>
+                </View>
+              )}
             </View>
 
-            <View style={styles.actions}>
-              <TouchableOpacity 
-                style={[styles.button, styles.resetButton]} 
-                onPress={handleReset}
-              >
-                <Text style={styles.resetButtonText}>Reset Scenario</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.button, styles.closeButton]} 
-                onPress={() => setIsVisible(false)}
-              >
-                <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
+            {isOperator && (
+              <View style={styles.actions}>
+                <TouchableOpacity 
+                  style={[styles.button, styles.resetButton, isResetting && styles.buttonDisabled]} 
+                  onPress={handleReset}
+                  disabled={isResetting} 
+                >
+                  <Text style={styles.resetButtonText}>Reset Scenario</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </Pressable>
         </Pressable>
       </Modal>
@@ -183,7 +199,6 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     padding: 16,
-    gap: 12,
     borderTopWidth: 1,
     borderTopColor: '#e5e5e5',
   },
@@ -192,6 +207,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
+    marginHorizontal: 6, 
   },
   resetButton: {
     backgroundColor: '#ef4444',
@@ -201,12 +217,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
-  closeButton: {
-    backgroundColor: '#f3f4f6',
-  },
-  closeButtonText: {
-    color: '#333',
-    fontWeight: '600',
-    fontSize: 14,
-  },
+  errorContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#fee2e2',
+  padding: 12,
+  borderRadius: 8,
+  marginTop: 12,
+  gap: 8,
+},
+errorText: {
+  color: '#ef4444',
+  fontSize: 14,
+  flex: 1,
+},
+buttonDisabled: {
+  opacity: 0.5,
+},
 });

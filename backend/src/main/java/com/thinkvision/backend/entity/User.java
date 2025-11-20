@@ -32,7 +32,6 @@ public class User {
 
     private String address;
 
-    //TODO: update api to handle flex dollar balance
     @Column(name = "flex_balance")
     private Double flexBalance;
 

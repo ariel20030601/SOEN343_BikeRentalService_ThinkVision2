@@ -23,7 +23,7 @@ export default function Index() {
 
         <View style={styles.actions}>
           <TouchableOpacity style={styles.primary} onPress={() => router.push('/(tabs)/login')}>
-            <Text style={styles.primaryText}>Get started</Text>
+            <Text style={styles.primaryText}>Login</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.secondary} onPress={() => router.push('/(tabs)/signup')}>

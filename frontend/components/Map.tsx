@@ -1,7 +1,13 @@
 import { Platform } from 'react-native';
-import MapWeb from './MapWeb';
-import MapNative from './Map.native';
+import MapWeb, { MapWebProps } from './Map.web';
+import MapNative, { MapNativeProps } from './Map.native';
 
-const MapScreen = Platform.OS === 'web' ? MapWeb : MapNative;
 
-export default MapScreen;
+type MapScreenProps = MapWebProps & MapNativeProps;
+
+export default function MapScreen(props: MapScreenProps) {
+  if (Platform.OS === 'web') {
+    return <MapWeb {...props} />;
+  }
+  return <MapNative {...props} />;
+}

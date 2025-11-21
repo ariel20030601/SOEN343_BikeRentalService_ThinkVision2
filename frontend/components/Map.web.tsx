@@ -10,10 +10,13 @@ import { useBikeState } from '@/hooks/useBikeState';
 import { useBikeOperations } from '@/hooks/useBikeOperations';
 import { useOperatorOperations } from '@/hooks/useOperatorOperations';
 
-export default function MapWeb() {
+export type MapWebProps = {
+  userRole: 'rider' | 'operator';
+};
+
+export default function MapWeb({userRole}: MapWebProps) {
   const [stations, setStations] = useState<StationData[]>([]);
   const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
-  const [userRole] = useState<'rider' | 'operator'>('rider');
   const [showTripSummary, setShowTripSummary] = useState(false);
   const [tripSummary, setTripSummary] = useState<any>(null);
   const [isReturningBike, setIsReturningBike] = useState(false);

@@ -318,20 +318,6 @@ export default function StationDetailsPanel({
 
             {/* Actions */}
             <View style={styles.actionsContainer}>
-              {/* Add Bikes (UI-only) - available to all users */}
-              <TouchableOpacity
-                style={[
-                  styles.actionButton,
-                  styles.secondaryButton,
-                  !canAddBikes && styles.disabledButton,
-                ]}
-                onPress={openAddModal}
-                disabled={!canAddBikes}
-              >
-                <Text style={styles.buttonText}>
-                  {canAddBikes ? 'Add Bikes' : 'Station Full'}
-                </Text>
-              </TouchableOpacity>
 
               {userRole === 'rider' && (
                 <>
@@ -412,6 +398,19 @@ export default function StationDetailsPanel({
 
               {userRole === 'operator' && (
                 <>
+                  <TouchableOpacity
+                    style={[
+                      styles.actionButton,
+                      styles.secondaryButton,
+                      !canAddBikes && styles.disabledButton,
+                    ]}
+                    onPress={openAddModal}
+                    disabled={!canAddBikes}
+                    >
+                    <Text style={styles.buttonText}>
+                      {canAddBikes ? 'Add Bikes' : 'Station Full'}
+                    </Text>
+                  </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.actionButton, styles.primaryButton, (!canMove || selectedDock === null) && styles.disabledButton]}
                     onPress={() => selectedDock !== null && onMoveBike?.(station, selectedDock)}

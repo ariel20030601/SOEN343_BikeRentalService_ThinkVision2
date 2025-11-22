@@ -1,8 +1,14 @@
-import React from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useFocusEffect } from '@react-navigation/native';
+import React, {useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 
 export default function Index() {
+
+  const { user } = useAuth();
+
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -20,17 +26,23 @@ export default function Index() {
           <Text style={styles.feature}>• Trip history and receipts</Text>
           <Text style={styles.feature}>• Operator dashboard and monitoring</Text>
         </View>
-
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.primary} onPress={() => router.push('/(tabs)/login')}>
-            <Text style={styles.primaryText}>Login</Text>
-          </TouchableOpacity>
+          {!user ? (
+            <>
+              <TouchableOpacity style={styles.primary} onPress={() => router.push('/(tabs)/login')}>
+                <Text style={styles.primaryText}>Login</Text>
+              </TouchableOpacity>
 
-          <TouchableOpacity style={styles.secondary} onPress={() => router.push('/(tabs)/signup')}>
-            <Text style={styles.secondaryText}>Create account</Text>
-          </TouchableOpacity>
+              <TouchableOpacity style={styles.secondary} onPress={() => router.push('/(tabs)/signup')}>
+                <Text style={styles.secondaryText}>Create account</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <TouchableOpacity style={styles.primary} onPress={() => router.push('/(tabs)/profile')}>
+              <Text style={styles.primaryText}>Profile Page</Text>
+            </TouchableOpacity>
+          )}
         </View>
-
         <Text style={styles.note}>Tip: Operators can log in to access the operator map.</Text>
       </ScrollView>
     </SafeAreaView>

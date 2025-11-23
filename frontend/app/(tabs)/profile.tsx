@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -9,29 +9,71 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9F6F1',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    paddingTop: 60,
+    paddingHorizontal: 20,
   },
-  text: {
-    fontSize: 20,
+  header: {
+    fontSize: 28,
+    fontWeight: '900',
     marginBottom: 20,
+    textAlign: 'center',
     color: '#333',
   },
-  usernameText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 30,
-    color: '#F15A29',
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+    color: '#555',
+  },
+  value: {
+    fontSize: 18,
+    marginBottom: 14,
+    color: '#222',
+  },
+  badge: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: '#D9D7F1',
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+    marginBottom: 14,
+  },
+  badgeText: {
+    color: '#4A3AFF',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  roleToggle: {
+    flexDirection: 'row',
+    marginVertical: 15,
+  },
+  roleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    marginHorizontal: 5,
+    borderRadius: 8,
+    backgroundColor: '#ddd',
+    alignItems: 'center',
+  },
+  roleButtonActive: {
+    backgroundColor: '#4A90E2',
+  },
+  roleText: {
+    color: '#333',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  roleTextActive: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
   },
   signOutButton: {
     backgroundColor: '#F15A29',
-    paddingHorizontal: 40,
-    paddingVertical: 15,
-    borderRadius: 8,
-    width: '80%',
-    maxWidth: 300,
+    paddingVertical: 16,
+    borderRadius: 10,
     alignItems: 'center',
+    marginTop: 40,
   },
   signOutButtonText: {
     color: '#fff',
@@ -41,56 +83,57 @@ const styles = StyleSheet.create({
 });
 
 export default function ProfileScreen() {
-  const { user, logout, isLoading } = useAuth();
+  const { user, logout, isLoading} = useAuth();
+
+  const flexDollars = (user as any).flexDollars as string | undefined;
+  const loyaltyTier = (user as any).loyaltyTier as string | undefined;
+
 
   useFocusEffect(
     useCallback(() => {
-      console.log('ProfileScreen - user:', user);
-      console.log('ProfileScreen - isLoading:', isLoading);
-      
       if (!isLoading && !user) {
-        console.log('No user found, redirecting to login');
-        router.replace('/(tabs)/login'); 
+        router.replace('/(tabs)/login');
       }
     }, [user, isLoading])
   );
+
   const handleSignOut = () => {
-    console.log('handleSignOut called!');
-    
-    if (window.confirm('Are you sure you want to sign out?')) {
-      console.log('Sign out confirmed!');
-      logout()
-        .then(() => {
-          console.log('Logout complete, navigating to login');
-          router.replace('/(tabs)/login');
-        })
-        .catch((error) => {
-          console.error('Error signing out:', error);
-        });
-    }
+    logout()
+      .then(() => router.replace('/(tabs)/login'))
+      .catch((error) => console.error('Error signing out:', error));
   };
 
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.text}>Loading...</Text>
+        <Text>Loading...</Text>
       </View>
     );
   }
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Welcome to your profile!</Text>
-      <Text style={styles.usernameText}>{user.username}</Text>
+      <Text style={styles.header}>My Account</Text>
+
+      <Text style={styles.label}>Username</Text>
+      <Text style={styles.value}>{user.username}</Text>
+
+      <Text style={styles.label}>Loyalty Tier</Text>
+      <View style={styles.badge}>
+        <Text style={styles.badgeText}>{loyaltyTier || 'Entry'}</Text>
+      </View>
+
+      <Text style={styles.label}>Flex Dollars</Text>
+      <Text style={styles.value}>${flexDollars ?? 0}</Text>
       
-      <TouchableOpacity 
-        style={styles.signOutButton} 
+
+      {/* Sign Out */}
+      <TouchableOpacity
+        style={styles.signOutButton}
         onPress={handleSignOut}
-        activeOpacity={0.7}
+        activeOpacity={0.8}
       >
         <Text style={styles.signOutButtonText}>Sign Out</Text>
       </TouchableOpacity>

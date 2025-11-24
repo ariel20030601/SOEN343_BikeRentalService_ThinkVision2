@@ -57,30 +57,31 @@ public class BillCalculator {
             LoyaltyTier tier = trip.getRider().getLoyaltyTier();
             int discountPercent = tier.getDiscountPercent();
             cost = cost * (100 - discountPercent) / 100.0;
-        // if a flex dollar was applied at trip start, reduce cost by 1.0 (not below 0)
-        if (trip.isFlexApplied()) {
-            cost = Math.max(0.0, cost - 1.0);
+            // if a flex dollar was applied at trip start, reduce cost by 1.0 (not below 0)
+            if (trip.isFlexApplied()) {
+                cost = Math.max(0.0, cost - 1.0);
+            }
+
+            // publish cost computed event for trip summary
+            applicationEventPublisher.publishEvent(new BillComputedEvent(trip, bike, cost));
+
+            // keep decoupled: for now compute and log; or forward to billing repo/service if present
+            System.out.println("BillCalculator: tripId=" + trip.getId() + " minutes=" + minutes + " cost=" + cost);
+
+            // save a billing record here using station IDs (FK-safe)
+            tripReceiptRepo.save(new TripReceipt(
+                    trip.getId(),
+                    trip.getRider().getId(),
+                    trip.getStartTime(),
+                    trip.getEndTime(),
+                    bike.getId(),
+                    trip.getStartStationId(),
+                    trip.getEndStationId(),
+                    cost
+            ));
+
+            applicationEventPublisher.publishEvent(new ProcessPaymentEvent(trip, cost));
         }
-
-        // publish cost computed event for trip summary
-        applicationEventPublisher.publishEvent(new BillComputedEvent(trip, bike, cost));
-
-        // keep decoupled: for now compute and log; or forward to billing repo/service if present
-        System.out.println("BillCalculator: tripId=" + trip.getId() + " minutes=" + minutes + " cost=" + cost);
-
-        // save a billing record here using station IDs (FK-safe)
-        tripReceiptRepo.save(new TripReceipt(
-                trip.getId(),
-                trip.getRider().getId(),
-                trip.getStartTime(),
-                trip.getEndTime(),
-                bike.getId(),
-                trip.getStartStationId(),
-                trip.getEndStationId(),
-                cost
-        ));
-
-        applicationEventPublisher.publishEvent(new ProcessPaymentEvent(trip, cost));
     }
 
     private PricingPlan determinePricingPlan(Bike bike) {

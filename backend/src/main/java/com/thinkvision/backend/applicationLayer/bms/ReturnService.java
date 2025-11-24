@@ -62,6 +62,11 @@ public class ReturnService {
         // Update Reservation record to RETURNED and set returnedAt (so loyalty queries see it)
         try {
             Optional<Reservation> optRes = reservationRepository.findFirstByRiderAndBikeIdAndStatus(user, trip.getBikeId(), ReservationStatus.CLAIMED);
+            // Fallback: any active reservation for the rider (covers cases where status wasn't CLAIMED)
+            if (optRes.isEmpty()) {
+                optRes = reservationRepository.findByRiderAndActiveTrue(user);
+            }
+
             if (optRes.isPresent()) {
                 Reservation res = optRes.get();
                 res.setStatus(ReservationStatus.RETURNED);

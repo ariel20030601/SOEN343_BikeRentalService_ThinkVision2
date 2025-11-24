@@ -31,7 +31,7 @@ public class ReservationService {
     @Autowired
     private StationService stationService;
 
-    private static final int EXPIRES_AFTER_MINUTES = 5;
+    private static final int EXPIRES_AFTER_MINUTES = 1;
 
     public Reservation reserveBike(Integer userId, String stationId, String bikeId) {
         User user = userRepo.findById(userId)
@@ -72,9 +72,11 @@ public class ReservationService {
                 bike.getReservationExpiry(),
                 true
         );
+        // Ensure status is RESERVED
+        res.setStatus(ReservationStatus.RESERVED);
         reservationRepo.save(res);
 
-        eventPublisher.publish("BikeReserved", res.getId());
+        eventPublisher.publish("BikeReserved, reservationId", res.getId());
         return res;
     }
 
@@ -92,6 +94,7 @@ public class ReservationService {
             Reservation res = reservationRepo.findByBikeIdAndActiveTrue(bike.getId()).orElse(null);
             if (res != null) {
                 res.setActive(false);
+                res.setStatus(ReservationStatus.MISSED);
                 reservationRepo.save(res);
             }
 

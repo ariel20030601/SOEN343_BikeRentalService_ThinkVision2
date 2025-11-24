@@ -7,6 +7,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.*;
+import java.time.temporal.TemporalAdjusters;
+import java.util.stream.IntStream;
+import java.util.Optional;
+
 @Component
 public class DemoDataLoader implements CommandLineRunner {
 
@@ -14,6 +19,8 @@ public class DemoDataLoader implements CommandLineRunner {
     private final StationRepository stationRepo;
     private final DockRepository dockRepo;
     private final BikeRepository bikeRepo;
+    private final ReservationRepository reservationRepo;
+    private final TripRepository tripRepo;
     private final PasswordEncoder passwordEncoder;
 
     public DemoDataLoader(
@@ -21,11 +28,15 @@ public class DemoDataLoader implements CommandLineRunner {
             StationRepository stationRepo,
             DockRepository dockRepo,
             BikeRepository bikeRepo,
+            ReservationRepository reservationRepo,
+            TripRepository tripRepo,
             PasswordEncoder passwordEncoder) {
         this.userRepo = userRepo;
         this.stationRepo = stationRepo;
         this.dockRepo = dockRepo;
         this.bikeRepo = bikeRepo;
+        this.reservationRepo = reservationRepo;
+        this.tripRepo = tripRepo;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -33,35 +44,137 @@ public class DemoDataLoader implements CommandLineRunner {
     @Transactional
     public void run(String... args) {
         createDemoUsers();
+        createLoyaltyEdgeUsers();
         createStation1();
         createStation2();
         createStation3();
     }
 
-    private void createDemoUsers() {
-        if (userRepo.findByUsername("demoRider").isEmpty()) {
-            User rider = new User();
-            rider.setFirstName("Demo");
-            rider.setLastName("Rider");
-            rider.setEmail("rider@example.com");
-            rider.setUsername("demoRider");
-            rider.setPasswordHash(passwordEncoder.encode("password"));
-            rider.setRole("RIDER");
-            rider.setAddress("123 Main St");
-            userRepo.save(rider);
+    // Helper: find by email first, then username
+    private Optional<User> findUserByEmailOrUsername(String email, String username) {
+        if (email != null) {
+            Optional<User> byEmail = userRepo.findByEmail(email);
+            if (byEmail.isPresent()) return byEmail;
+        }
+        if (username != null) {
+            return userRepo.findByUsername(username);
+        }
+        return Optional.empty();
+    }
+
+    private User createUserIfMissing(String email, String username,
+                                     String firstName, String lastName,
+                                     String role, String address, LoyaltyTier tier) {
+        Optional<User> existing = findUserByEmailOrUsername(email, username);
+        if (existing.isPresent()) {
+            return existing.get();
         }
 
-        if (userRepo.findByUsername("demoOperator").isEmpty()) {
-            User operator = new User();
-            operator.setFirstName("Demo");
-            operator.setLastName("Operator");
-            operator.setEmail("operator@example.com");
-            operator.setUsername("demoOperator");
-            operator.setPasswordHash(passwordEncoder.encode("password"));
-            operator.setRole("OPERATOR");
-            operator.setAddress("456 Service Rd");
-            userRepo.save(operator);
+        User u = new User();
+        u.setFirstName(firstName);
+        u.setLastName(lastName);
+        u.setEmail(email);
+        u.setUsername(username);
+        u.setPasswordHash(passwordEncoder.encode("password"));
+        u.setRole(role);
+        u.setAddress(address);
+        if (tier != null) u.setLoyaltyTier(tier);
+        userRepo.save(u);
+        return u;
+    }
+
+    private void createDemoUsers() {
+        createUserIfMissing("rider@example.com", "demoRider", "Demo", "Rider", "RIDER", "123 Main St", null);
+        createUserIfMissing("operator@example.com", "demoOperator", "Demo", "Operator", "OPERATOR", "456 Service Rd", null);
+    }
+
+    private void createLoyaltyEdgeUsers() {
+        // nearBronze / almost bronze (email/username tuned)
+        String nearBronzeEmail = "nearbronze@example.com";
+        String nearBronzeUsername = "nearBronze";
+        Optional<User> maybeNearBronze = findUserByEmailOrUsername(nearBronzeEmail, nearBronzeUsername);
+        if (maybeNearBronze.isEmpty()) {
+            User u = createUserIfMissing(nearBronzeEmail, nearBronzeUsername, "None", "AlmostBronze", "RIDER", "1 Demo Ln", null);
+            Instant now = Instant.now();
+            IntStream.range(0, 10).forEach(i -> {
+                Instant reserved = now.minus(Duration.ofDays(30L * (i + 1)));
+                Instant returned = reserved.plus(Duration.ofHours(2));
+                createReturnedReservation(u, reserved, returned);
+            });
         }
+
+        // bronzeNearSilver
+        String bronzeEmail = "bronzenearsilver@example.com";
+        String bronzeUsername = "nearSilver";
+        Optional<User> maybeBronze = findUserByEmailOrUsername(bronzeEmail, bronzeUsername);
+        if (maybeBronze.isEmpty()) {
+            User u = createUserIfMissing(bronzeEmail, bronzeUsername, "Bronze", "AlmostSilver", "RIDER", "2 Demo Ln", LoyaltyTier.BRONZE);
+            Instant now = Instant.now();
+            IntStream.range(0, 12).forEach(i -> {
+                Instant reserved = now.minus(Duration.ofDays(10L * (i + 1)));
+                Instant returned = reserved.plus(Duration.ofHours(1));
+                createReturnedReservation(u, reserved, returned);
+            });
+            IntStream.range(0, 4).forEach(i -> {
+                Instant reserved = now.minus(Duration.ofDays(20L * (i + 1)));
+                createClaimedReservation(u, reserved);
+            });
+            ZonedDateTime zNow = ZonedDateTime.ofInstant(now, ZoneId.systemDefault());
+            for (int m = 0; m < 3; m++) {
+                YearMonth ym = YearMonth.from(zNow.minusMonths(m));
+                LocalDateTime start = ym.atDay(1).atStartOfDay();
+                Instant from = start.atZone(ZoneId.systemDefault()).toInstant();
+                IntStream.range(0, 6).forEach(i -> {
+                    Instant reserved = from.plus(Duration.ofDays(i + 1));
+                    createReturnedReservation(u, reserved, reserved.plus(Duration.ofHours(1)));
+                });
+            }
+        }
+
+        // silverNearGold
+        String silverEmail = "silverneargold@example.com";
+        String silverUsername = "nearGold";
+        Optional<User> maybeSilver = findUserByEmailOrUsername(silverEmail, silverUsername);
+        if (maybeSilver.isEmpty()) {
+            User u = createUserIfMissing(silverEmail, silverUsername, "Silver", "AlmostGold", "RIDER", "3 Demo Ln", LoyaltyTier.SILVER);
+            Instant now = Instant.now();
+            ZonedDateTime zNow = ZonedDateTime.ofInstant(now, ZoneId.systemDefault());
+            for (int week = 0; week < 13; week++) {
+                ZonedDateTime reference = zNow.minusWeeks(week);
+                LocalDate weekStartDate = reference.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).toLocalDate();
+                Instant weekStart = weekStartDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+                int count = (week == 5) ? 5 : 6;
+                for (int i = 0; i < count; i++) {
+                    Instant reserved = weekStart.plus(Duration.ofDays(i));
+                    createReturnedReservation(u, reserved, reserved.plus(Duration.ofHours(1)));
+                }
+            }
+        }
+    }
+
+    // Helper: create a RETURNED reservation (basic fields used by tier evaluation)
+    private void createReturnedReservation(User rider, Instant reservedAt, Instant returnedAt) {
+        Reservation r = new Reservation();
+        r.setRider(rider);
+        r.setReservedAt(reservedAt);
+        r.setExpiresAt(reservedAt.plus(Duration.ofMinutes(5)));
+        r.setActive(false);
+        r.setClaimedAt(reservedAt.plus(Duration.ofMinutes(5)));
+        r.setReturnedAt(returnedAt);
+        r.setStatus(ReservationStatus.RETURNED);
+        reservationRepo.save(r);
+    }
+
+    // Helper: create a CLAIMED reservation (not returned yet)
+    private void createClaimedReservation(User rider, Instant reservedAt) {
+        Reservation r = new Reservation();
+        r.setRider(rider);
+        r.setReservedAt(reservedAt);
+        r.setExpiresAt(reservedAt.plus(Duration.ofMinutes(5)));
+        r.setActive(true);
+        r.setClaimedAt(reservedAt.plus(Duration.ofMinutes(2)));
+        r.setStatus(ReservationStatus.CLAIMED);
+        reservationRepo.save(r);
     }
 
     // ===============================
@@ -83,32 +196,27 @@ public class DemoDataLoader implements CommandLineRunner {
         s1.setStatus(StationStatus.OCCUPIED);
         s1.setExpiresAfterMinutes(5);
 
-        // build docks + bikes in memory, then save station once
         for (int i = 1; i <= s1.getCapacity(); i++) {
             Dock dock = new Dock();
             dock.setId("S1D" + i);
             dock.setName("Dock " + i);
-            dock.setStation(s1);       // set parent
-            s1.getDocks().add(dock);   // keep bidirectional in sync
+            dock.setStation(s1);
+            s1.getDocks().add(dock);
 
             if (i <= 13) {
                 dock.setStatus(DockStatus.OCCUPIED);
-
                 Bike bike = new Bike();
                 bike.setId("S1B" + i);
                 bike.setStatus(BikeStatus.AVAILABLE);
                 bike.setType(BikeType.STANDARD);
-
-                bike.setDock(dock);    // owning side
-                dock.setBike(bike);    // inverse side
+                bike.setDock(dock);
+                dock.setBike(bike);
             } else {
                 dock.setStatus(DockStatus.EMPTY);
             }
         }
 
-        // cascade Station -> Docks -> Bikes
         stationRepo.save(s1);
-
         System.out.println("Loaded Station 1 (SGW) with 13 bikes and 10 empty docks.");
     }
 
@@ -149,7 +257,6 @@ public class DemoDataLoader implements CommandLineRunner {
         }
 
         stationRepo.save(s2);
-
         System.out.println("Loaded Station 2 (Loyola) with 15 bikes (10 standard, 5 e-bikes).");
     }
 
@@ -181,12 +288,10 @@ public class DemoDataLoader implements CommandLineRunner {
 
             if (i <= 3) {
                 dock.setStatus(DockStatus.OCCUPIED);
-
                 Bike bike = new Bike();
                 bike.setId("S3B" + i);
                 bike.setStatus(BikeStatus.AVAILABLE);
                 bike.setType(BikeType.STANDARD);
-
                 bike.setDock(dock);
                 dock.setBike(bike);
             } else {
@@ -195,7 +300,6 @@ public class DemoDataLoader implements CommandLineRunner {
         }
 
         stationRepo.save(s3);
-
         System.out.println("Loaded Station 3 (Desjardins) with 3 bikes and 17 empty docks.");
     }
 
@@ -203,11 +307,19 @@ public class DemoDataLoader implements CommandLineRunner {
     public void reloadDemoData() {
         System.out.println("Resetting BikeShare system to demo baseline...");
 
+        // remove dependent data first
+        tripRepo.deleteAll();
+        reservationRepo.deleteAll();
+
+        // stations/bikes/docks
         bikeRepo.deleteAll();
         dockRepo.deleteAll();
         stationRepo.deleteAll();
 
-        // varargs, so this is fine
+        // users last (they may be referenced by other tables)
+        userRepo.deleteAll();
+
+        // rebuild baseline
         run();
 
         System.out.println("Demo data reloaded successfully.");

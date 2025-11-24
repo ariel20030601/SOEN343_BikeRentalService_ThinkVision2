@@ -85,8 +85,8 @@ const styles = StyleSheet.create({
 export default function ProfileScreen() {
   const { user, logout, isLoading} = useAuth();
 
-  const flexDollars = (user as any).flexDollars as string | undefined;
-  const loyaltyTier = (user as any).loyaltyTier as string | undefined;
+  const flexDollars = (user as any)?.flexDollars ?? 0;
+  const loyaltyTier = (user as any)?.loyaltyTier ?? 'Entry'; 
 
 
   useFocusEffect(

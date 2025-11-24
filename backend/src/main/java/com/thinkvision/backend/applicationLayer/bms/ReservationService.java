@@ -54,9 +54,13 @@ public class ReservationService {
         if (bike.getStatus() != BikeStatus.AVAILABLE)
             throw new IllegalStateException("Bike is not available");
 
+        // Set reservation expiry with loyalty extra hold time
+        int extraHoldSeconds = user.getLoyaltyTier() != null ? user.getLoyaltyTier().getExtraHoldSeconds() : 0;
+        int totalHoldSeconds = EXPIRES_AFTER_MINUTES * 60 + extraHoldSeconds;
+
         // Mark reserved
         bike.setStatus(BikeStatus.RESERVED);
-        bike.setReservationExpiry(Instant.now().plusSeconds(EXPIRES_AFTER_MINUTES * 60));
+        bike.setReservationExpiry(Instant.now().plusSeconds(totalHoldSeconds));
         bikeRepo.save(bike);
 
         // Create reservation

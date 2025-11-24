@@ -52,6 +52,13 @@ public class BillCalculator {
         PricingPlan pricingPlan = determinePricingPlan(bike);
         double cost = pricingPlan.getFare(minutes);
 
+        // Account for rider loyalty tier discounts
+        if (trip.getRider() != null && trip.getRider().getLoyaltyTier() != null) {
+            LoyaltyTier tier = trip.getRider().getLoyaltyTier();
+            int discountPercent = tier.getDiscountPercent();
+            cost = cost * (100 - discountPercent) / 100.0;
+        }
+
         // publish cost computed event for trip summary
         applicationEventPublisher.publishEvent(new BillComputedEvent(trip, bike, cost));
 

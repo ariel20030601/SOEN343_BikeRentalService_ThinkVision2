@@ -86,7 +86,8 @@ export default function ProfileScreen() {
   const { user, logout, isLoading} = useAuth();
 
   const flexDollars = (user as any)?.flexDollars ?? 0;
-  const loyaltyTier = (user as any)?.loyaltyTier ?? 'Entry';
+  const loyaltyTier = (user as any)?.loyaltyTier ?? 'Entry'; 
+
 
   useFocusEffect(
     useCallback(() => {

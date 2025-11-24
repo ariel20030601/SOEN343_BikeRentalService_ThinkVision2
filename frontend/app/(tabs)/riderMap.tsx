@@ -39,7 +39,11 @@ export default function Index() {
       </View>
 
       <View style={styles.mapContainer}>
-        <MapScreen userRole="rider"/>
+        {!user ? (
+          <MapScreen userRole="visitor"/>
+        ) : (
+          <MapScreen userRole="rider"/>
+        )}
       </View>
 
       <View style={styles.footer}>

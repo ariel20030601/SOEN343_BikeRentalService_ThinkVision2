@@ -10,13 +10,9 @@ const { user } = useAuth();
 
 useFocusEffect(
   useCallback(() => {
-    if (!user) {
-      router.replace('/login');
-      return;
-    }
 
-    const role = (user as any).role as string | undefined;
-    const username = (user as any).username as string | undefined;
+    const role = (user as any)?.role ?? 'visitor';
+    const username = (user as any)?.username ?? '';
 
     if (role === 'operator' || (username && username.toLowerCase().includes('operator'))) {
       router.replace('/(tabs)/operatorMap');

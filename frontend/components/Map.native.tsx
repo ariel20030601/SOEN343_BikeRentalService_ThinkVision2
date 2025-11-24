@@ -6,7 +6,7 @@ import { View, StyleSheet } from 'react-native';
 import { StationData } from '@/hardcode/MapStyle';
 
 export type MapNativeProps = {
-  userRole: 'rider' | 'operator';
+  userRole: 'rider' | 'operator' | 'visitor';
 };
 
 export default function MapNative({userRole}: MapNativeProps) {

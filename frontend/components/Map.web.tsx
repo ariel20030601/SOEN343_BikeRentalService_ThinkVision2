@@ -11,7 +11,7 @@ import { useBikeOperations } from '@/hooks/useBikeOperations';
 import { useOperatorOperations } from '@/hooks/useOperatorOperations';
 
 export type MapWebProps = {
-  userRole: 'rider' | 'operator';
+  userRole: 'rider' | 'operator' | 'visitor';
 };
 
 export default function MapWeb({userRole}: MapWebProps) {

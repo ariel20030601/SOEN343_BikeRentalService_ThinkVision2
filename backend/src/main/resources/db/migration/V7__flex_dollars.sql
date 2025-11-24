@@ -1,0 +1,4 @@
+ALTER TABLE users
+    ADD COLUMN flex_balance DOUBLE DEFAULT 0.0;
+
+ALTER TABLE trips ADD COLUMN flex_applied BOOLEAN DEFAULT FALSE;

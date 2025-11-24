@@ -1,10 +1,42 @@
-import React from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
 import { router } from 'expo-router';
+import TierNotification from '@/components/Notification';
+import { fetchUserTier } from '@/api/auth/loginAPI';
 
 export default function Index() {
+  const [tierNotification, setTierNotification] = useState(false);
+  const [newTier, setNewTier] = useState('');
+
+  const { user } = useAuth();
+
+  const currentTier = user?.currentTier ?? null;
+
+  const updateTier = useCallback(async () => {
+    if (!user) return;         // Guard check
+    if (!user.id) return;      // Ensure ID exists
+    if (!currentTier) return;
+
+    const response = await fetchUserTier(user.id);
+
+    if (response.newTier && response.newTier !== currentTier) {
+      setNewTier(response.newTier);
+      setTierNotification(true);
+    }
+  }, [user, currentTier]);
+
+  useEffect(() => {
+    updateTier();
+  }, [updateTier]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
+      <TierNotification
+        tier={newTier}
+        visible={tierNotification}
+        onHide={() => setTierNotification(false)}
+      />
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.brand}>ThinkVision</Text>
         <Text style={styles.title}>Bike Rental Service</Text>
@@ -20,17 +52,23 @@ export default function Index() {
           <Text style={styles.feature}>• Trip history and receipts</Text>
           <Text style={styles.feature}>• Operator dashboard and monitoring</Text>
         </View>
-
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.primary} onPress={() => router.push('/(tabs)/login')}>
-            <Text style={styles.primaryText}>Get started</Text>
-          </TouchableOpacity>
+          {!user ? (
+            <>
+              <TouchableOpacity style={styles.primary} onPress={() => router.push('/(tabs)/login')}>
+                <Text style={styles.primaryText}>Login</Text>
+              </TouchableOpacity>
 
-          <TouchableOpacity style={styles.secondary} onPress={() => router.push('/(tabs)/signup')}>
-            <Text style={styles.secondaryText}>Create account</Text>
-          </TouchableOpacity>
+              <TouchableOpacity style={styles.secondary} onPress={() => router.push('/(tabs)/signup')}>
+                <Text style={styles.secondaryText}>Create account</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <TouchableOpacity style={styles.primary} onPress={() => router.push('/(tabs)/profile')}>
+              <Text style={styles.primaryText}>Profile Page</Text>
+            </TouchableOpacity>
+          )}
         </View>
-
         <Text style={styles.note}>Tip: Operators can log in to access the operator map.</Text>
       </ScrollView>
     </SafeAreaView>

@@ -21,6 +21,8 @@ export interface User {
     id: number;
     username: string;
     email: string;
+    newTier: string;
+    currentTier: string;
 }
 
 export interface AuthResponse {
@@ -99,5 +101,16 @@ export async function fetchUserMe(token: string): Promise<User> {
         throw new Error("Failed to fetch user");
     }
 
+    return response.json();
+}
+
+export async function fetchUserTier(token: string): Promise<User> {
+    const response = await fetch(`${API_URL}/tier`, {
+        method: "GET",
+    });
+    if (!response.ok) {
+        const text = await response.text().catch(() => "");
+        throw new Error(text || `Failed to fetch user tier (${response.status})`);
+    }
     return response.json();
 }

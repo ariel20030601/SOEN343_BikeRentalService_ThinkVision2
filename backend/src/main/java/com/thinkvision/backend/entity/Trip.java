@@ -38,6 +38,10 @@ public class Trip {
     @Column(name = "active")
     private boolean active;
 
+    @Column(name = "flex_applied", nullable = false)
+    private boolean flexApplied = false;
+
+
     public Trip() {}
 
 }

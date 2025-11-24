@@ -1,15 +1,18 @@
-
-import { View, StyleSheet, TouchableOpacity, Image } from "react-native";
+import { router } from "expo-router";
+import { View, StyleSheet, TouchableOpacity, Image, Text } from "react-native";
 import MapScreen from "@/components/Map";
 import SearchButton from '@/components/SearchButton'
 import ProfileButton from "@/components/ProfileButton";
 import InfoButton from "@/components/InfoButton";
 import MapLegend from '@/components/MapLegend';
+import { useAuth } from '@/contexts/AuthContext';
 
 const PlaceholderImage = require('@/assets/images/bibixi_logo.png');
 
 export default function Index() {
 
+  const { user } = useAuth();
+  const username = user?.username;
 
   return (
     <View style={styles.container}>
@@ -23,6 +26,11 @@ export default function Index() {
             <InfoButton />
           </TouchableOpacity>
 
+        {(username && username.toLowerCase().includes('operator')) && (
+          <TouchableOpacity style={styles.switchButton} onPress={() => router.push('/(tabs)/operatorMap')}>
+            <Text style={styles.switchButtonText}>Switch to Operator Map</Text>
+          </TouchableOpacity>
+        )}
         <View style={styles.rightIcons}>
           <TouchableOpacity style={styles.iconButton}>
             <SearchButton />
@@ -31,7 +39,11 @@ export default function Index() {
       </View>
 
       <View style={styles.mapContainer}>
-        <MapScreen/>
+        {!user ? (
+          <MapScreen userRole="visitor"/>
+        ) : (
+          <MapScreen userRole="rider"/>
+        )}
       </View>
 
       <View style={styles.footer}>
@@ -85,5 +97,24 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     zIndex: 10,
+  },
+
+  switchButton: {
+  paddingVertical: 10,
+  paddingHorizontal: 18,
+  backgroundColor: "#4A90E2",       
+  borderRadius: 20,
+  marginHorizontal: 10,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.15,
+  shadowRadius: 4,
+  elevation: 3,                      
+},
+
+  switchButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

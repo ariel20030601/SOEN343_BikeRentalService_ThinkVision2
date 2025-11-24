@@ -57,6 +57,9 @@ public class BillCalculator {
             LoyaltyTier tier = trip.getRider().getLoyaltyTier();
             int discountPercent = tier.getDiscountPercent();
             cost = cost * (100 - discountPercent) / 100.0;
+        // if a flex dollar was applied at trip start, reduce cost by 1.0 (not below 0)
+        if (trip.isFlexApplied()) {
+            cost = Math.max(0.0, cost - 1.0);
         }
 
         // publish cost computed event for trip summary

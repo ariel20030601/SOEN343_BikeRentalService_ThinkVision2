@@ -19,6 +19,7 @@ export default function History() {
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [isOperator, setIsOperator] = useState<boolean>(false);
   const [selectedUserName, setSelectedUserName] = useState<string>("");
+  const [viewAsRider, setViewAsRider] = useState<boolean>(false);
 
   const username = (user?.username as string) || "";
   // If operator and no specific user selected, show All Users
@@ -161,6 +162,30 @@ export default function History() {
       <Text style={{ textAlign: 'center', marginBottom: 8, color: '#555' }}>User: {displayUsername || '-'}</Text>
 
       {isOperator && (
+        <View style={styles.operatorModeRow}>
+          <Pressable
+            style={[styles.chip, viewAsRider && styles.chipActive]}
+            onPress={() => {
+              const next = !viewAsRider;
+              setViewAsRider(next);
+              if (next) {
+                // switch to rider view--show only my rides
+                setSelectedUserName(username);
+              } else {
+                // switch back to operator aggregate--show all users
+                setSelectedUserName("");
+              }
+              applyOperatorUser();
+            }}
+          >
+            <Text style={[styles.chipText, viewAsRider && styles.chipTextActive]}>
+              Me
+            </Text>
+          </Pressable>
+        </View>
+      )}
+
+      {isOperator && !viewAsRider && (
         <View style={styles.operatorRow}>
           <Text style={styles.filterLabel}>Operator: View user</Text>
           <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
@@ -405,6 +430,12 @@ const styles = StyleSheet.create({
   },
   headerCell: {
     fontWeight: "600",
+  },
+  operatorModeRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 8,
   },
   operatorRow: {
     marginBottom: 8,

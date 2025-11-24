@@ -8,6 +8,7 @@ import {
   Modal,
   Pressable,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 
 // Backend structure
 interface Dock {
@@ -47,7 +48,7 @@ export interface StationData {
 interface StationDetailsPanelProps {
   visible: boolean;
   station: StationData | null;
-  userRole: 'rider' | 'operator';
+  userRole: 'rider' | 'operator' | 'visitor';
   hasReservedBike?: boolean;
   reservedBikeId?: string | null; // Track which bike is reserved
   hasCheckoutBike?: boolean;
@@ -80,6 +81,7 @@ export default function StationDetailsPanel({
   onAddBikes,
 }: StationDetailsPanelProps) {
   const [selectedDock, setSelectedDock] = useState<number | null>(null);
+  const router = useRouter();
 
   // --- Local UI-only state for adding bikes (virtual) ---
   // Map of dockIndex -> { type: 'STANDARD' | 'E_BIKE' } representing UI-added bikes
@@ -318,20 +320,6 @@ export default function StationDetailsPanel({
 
             {/* Actions */}
             <View style={styles.actionsContainer}>
-              {/* Add Bikes (UI-only) - available to all users */}
-              <TouchableOpacity
-                style={[
-                  styles.actionButton,
-                  styles.secondaryButton,
-                  !canAddBikes && styles.disabledButton,
-                ]}
-                onPress={openAddModal}
-                disabled={!canAddBikes}
-              >
-                <Text style={styles.buttonText}>
-                  {canAddBikes ? 'Add Bikes' : 'Station Full'}
-                </Text>
-              </TouchableOpacity>
 
               {userRole === 'rider' && (
                 <>
@@ -413,6 +401,19 @@ export default function StationDetailsPanel({
               {userRole === 'operator' && (
                 <>
                   <TouchableOpacity
+                    style={[
+                      styles.actionButton,
+                      styles.secondaryButton,
+                      !canAddBikes && styles.disabledButton,
+                    ]}
+                    onPress={openAddModal}
+                    disabled={!canAddBikes}
+                    >
+                    <Text style={styles.buttonText}>
+                      {canAddBikes ? 'Add Bikes' : 'Station Full'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
                     style={[styles.actionButton, styles.primaryButton, (!canMove || selectedDock === null) && styles.disabledButton]}
                     onPress={() => selectedDock !== null && onMoveBike?.(station, selectedDock)}
                     disabled={!canMove || selectedDock === null}
@@ -431,6 +432,19 @@ export default function StationDetailsPanel({
                       {selectedDock !== null ? `Send Dock ${selectedDock + 1} to Maintenance` : 'Select Bike First'}
                     </Text>
                   </TouchableOpacity>
+                </>
+              )}
+              {userRole === 'visitor' && (
+                <>
+                  <View style={styles.visitorBox}>
+                    <Text style={styles.errorText}>Please log in to access all features</Text>
+                    <TouchableOpacity
+                      style={styles.loginButton}
+                      onPress={() => router.push('/(tabs)/login')}
+                    >
+                      <Text style={styles.loginButtonText}>Log In</Text>
+                    </TouchableOpacity>
+                  </View>
                 </>
               )}
             </View>
@@ -714,10 +728,38 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   errorText: {
-    color: '#F44336',
-    fontSize: 13,
+    color: '#B71C1C',
+    backgroundColor: '#FFEBEE',
+    fontSize: 16,
+    fontWeight: '700',
     textAlign: 'center',
     marginTop: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    alignSelf: 'stretch',
+  },
+  visitorBox: {
+    alignItems: 'center',
+    marginTop: 8,
+    width: '100%',
+  },
+  loginButton: {
+    marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 22,
+    borderRadius: 8,
+    backgroundColor: 'rgb(241, 90, 41)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  loginButtonText: {
+    color: 'white',
+    fontSize: 15,
+    fontWeight: '700',
   },
   dockReservedByUser: {
   borderColor: '#FFD700',

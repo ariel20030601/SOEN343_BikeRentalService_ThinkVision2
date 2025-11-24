@@ -5,9 +5,12 @@ import StationDetailsPanel from '@/components/StationDetailsPanel';
 import { View, StyleSheet } from 'react-native';
 import { StationData } from '@/hardcode/MapStyle';
 
-export default function MapNative() {
+export type MapNativeProps = {
+  userRole: 'rider' | 'operator' | 'visitor';
+};
+
+export default function MapNative({userRole}: MapNativeProps) {
   const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
-  const [userRole] = useState<'rider' | 'operator'>('operator');
   const [hasReservedBike, setHasReservedBike] = useState(false);
 
   const handleReserveBike = (station: StationData) => {

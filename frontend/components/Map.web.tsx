@@ -1,233 +1,58 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, FlatList, Button, Alert, ScrollView } from 'react-native';
+import { View, StyleSheet, Modal, TouchableOpacity, FlatList, Button, Alert, Text } from 'react-native';
 import { APIProvider, Map } from '@vis.gl/react-google-maps';
 import Markers from './Markers.web';
 import StationDetailsPanel from '@/components/StationDetailsPanel';
-import { reserveBike, checkoutBike, returnBike } from '@/api/auth/bmsAPI';
-import { TripSummaryDTO } from '@/api/auth/histAPI';
+import TripSummaryModal from '@/components/TripSummaryModal';
 import { fetchStations } from '@/api/auth/dashboardAPI';
-import { getTripSummary } from '@/api/auth/prcAPI';
+import { StationData } from '@/types/station';
+import { useBikeState } from '@/hooks/useBikeState';
+import { useBikeOperations } from '@/hooks/useBikeOperations';
+import { useOperatorOperations } from '@/hooks/useOperatorOperations';
 
-const STORAGE_KEYS = {
-  HAS_RESERVED: 'bibixi_has_reserved_bike',
-  RESERVED_BIKE_ID: 'bibixi_reserved_bike_id',
-  HAS_CHECKOUT: 'bibixi_has_checkout_bike',
-  CHECKOUT_BIKE_ID: 'bibixi_checkout_bike_id',
-  CURRENT_TRIP_ID: 'bibixi_current_trip_id',
+export type MapWebProps = {
+  userRole: 'rider' | 'operator' | 'visitor';
 };
 
-const saveToStorage = (key: string, value: any) => {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (e) {
-    console.error('Failed to save to storage:', e);
-  }
-};
-
-const loadFromStorage = (key: string) => {
-  try {
-    const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : null;
-  } catch (e) {
-    console.error('Failed to load from storage:', e);
-    return null;
-  }
-};
-
-const clearStorage = () => {
-  Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
-};
-
-export type StationStatus = "EMPTY" | "OCCUPIED" | "FULL" | "OUT_OF_SERVICE";
-
-
-export interface StationData {
-  id: string;
-  name: string;
-  address: string;
-  latitude: number;
-  longitude: number;
-  capacity: number;
-  availableBikes: number;
-  freeDocks: number;
-  status: StationStatus;
-  docks?: {
-    id: string;
-    name: string;
-    status: string;
-    bike?: {
-      id: string;
-      type: "STANDARD" | "E_BIKE";
-      status: string;
-    };
-  }[];
-}
-
-export default function MapWeb() {
+export default function MapWeb({userRole}: MapWebProps) {
   const [stations, setStations] = useState<StationData[]>([]);
   const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
-  const [userRole] = useState<'rider' | 'operator'>('rider'); // TODO: Get from context
-  const [hasReservedBike, setHasReservedBike] = useState(() => 
-    loadFromStorage(STORAGE_KEYS.HAS_RESERVED) || false
-  );
-  const [hasCheckoutBike, setHasCheckoutBike] = useState(() => 
-    loadFromStorage(STORAGE_KEYS.HAS_CHECKOUT) || false
-  );
-  const [checkoutBikeId, setCheckoutBikeId] = useState<string | null>(() => 
-    loadFromStorage(STORAGE_KEYS.CHECKOUT_BIKE_ID)
-  );
-  const [reservedBikeId, setReservedBikeId] = useState<string | null>(() => 
-    loadFromStorage(STORAGE_KEYS.RESERVED_BIKE_ID)
-  );
-  const [currentTripId, setCurrentTripId] = useState<number | null>(() => 
-    loadFromStorage(STORAGE_KEYS.CURRENT_TRIP_ID)
-  );
   const [showTripSummary, setShowTripSummary] = useState(false);
-  const [tripSummary, setTripSummary] = useState<TripSummaryDTO | null>(null);
+  const [tripSummary, setTripSummary] = useState<any>(null);
   const [isReturningBike, setIsReturningBike] = useState(false);
-  const { user } = useAuth();    
-  const operatorId = 2;
   const [showDestinationModal, setShowDestinationModal] = useState(false);
   const [moveBikeSource, setMoveBikeSource] = useState<{station: StationData, bikeId: string} | null>(null);
-
+  
+  const operatorId = 2;
+  const bikeState = useBikeState();
 
   const getStations = async () => {
     try {
-        console.log("operatorId:", operatorId);
-        const stations = await fetchStations(operatorId);
-        setStations(stations);
-      } catch (err) {
-        console.error("Failed to fetch stations", err);
-      }
-  }
+      const stations = await fetchStations(operatorId);
+      setStations(stations);
+    } catch (err) {
+      console.error("Failed to fetch stations", err);
+    }
+  };
 
   useEffect(() => {
     getStations();
   }, []);
 
-    useEffect(() => {
-    saveToStorage(STORAGE_KEYS.HAS_RESERVED, hasReservedBike);
-  }, [hasReservedBike]);
-
-  useEffect(() => {
-    saveToStorage(STORAGE_KEYS.RESERVED_BIKE_ID, reservedBikeId);
-  }, [reservedBikeId]);
-
-  useEffect(() => {
-    saveToStorage(STORAGE_KEYS.HAS_CHECKOUT, hasCheckoutBike);
-  }, [hasCheckoutBike]);
-
-  useEffect(() => {
-    saveToStorage(STORAGE_KEYS.CHECKOUT_BIKE_ID, checkoutBikeId);
-  }, [checkoutBikeId]);
-
-  useEffect(() => {
-    saveToStorage(STORAGE_KEYS.CURRENT_TRIP_ID, currentTripId);
-  }, [currentTripId]);
-
-
-  const handleReserveBike = async (station: StationData, bikeId: string) => {
-    // derive riderId from auth user (safe fallbacks)
-    const riderId = (user as any)?.id ?? (user as any)?.userId ?? (user as any)?.sub ?? 1;
-
-    try {
-      console.log('Reserving bike:', { riderId, stationId: station.id, bikeId });
-      const reservation = await reserveBike(riderId, station.id, bikeId);
-      console.log('Reserve response:', reservation);
-
-      setHasReservedBike(true);
-      setReservedBikeId(bikeId);
-
-      console.log('Success', 'Bike reserved successfully');
-    } catch (err) {
-      console.error('Reserve error:', err);
-      console.log('Error', 'Failed to reserve bike');
-    }
-  };
-
-  const handleCheckoutBike = async (station: StationData, bikeId?: string) => {
-    const riderId = (user as any)?.id ?? (user as any)?.userId ?? (user as any)?.sub ?? 1;
-
-    let finalBikeId: string;
-    if (hasReservedBike && reservedBikeId) {
-      const reservedBikeDock = station.docks?.find(d => d.bike?.id === reservedBikeId);
-      if (!reservedBikeDock) {
-        console.log('Error', 'Your reserved bike is not at this station');
-        return;
-      }
-      finalBikeId = reservedBikeId;
-    } else {
-      if (!bikeId) {
-        console.log('Error', 'Please select a bike to checkout');
-        return;
-      }
-      const selectedDock = station.docks?.find(d => d.bike?.id === bikeId);
-      if (!selectedDock?.bike) {
-        console.log('Error', 'Selected bike not found');
-        return;
-      }
-      if (selectedDock.bike.status === 'RESERVED') {
-        console.log('Error', 'This bike is reserved by another rider');
-        return;
-      }
-      finalBikeId = bikeId;
-    }
-
-    try {
-      console.log('Checkout bike:', { riderId, stationId: station.id, bikeId: finalBikeId });
-      const trip = await checkoutBike(riderId, station.id, finalBikeId);
-      console.log('Checkout response:', trip);
-      
-      // Clear reservation state and set checkout state
-      setHasReservedBike(false);
-      setReservedBikeId(null);
-      setHasCheckoutBike(true);
-      setCheckoutBikeId(finalBikeId);
-      setCurrentTripId(trip.id);
-      
-      // Refresh stations so docks update
-      setSelectedStation(null);
-      getStations().catch(() => {});
-      console.log('Success', 'Bike checked out successfully');
-    } catch (err) {
-      console.error('Checkout error:', err);
-      console.log('Error', err instanceof Error ? err.message : 'Failed to checkout bike');
-    }
-  };
-
+  const bikeOps = useBikeOperations(bikeState, getStations);
+  const operatorOps = useOperatorOperations(operatorId, getStations);
 
   const handleReturnBike = async (station: StationData, bikeId: string) => {
-    const riderId = (user as any)?.id ?? (user as any)?.userId ?? (user as any)?.sub ?? 1;
     setIsReturningBike(true);
-    
     try {
-      console.log('Returning bike:', { riderId, stationId: station.id, bikeId });
-      const trip = await returnBike(riderId, station.id, bikeId);
-      console.log('Return response:', trip);
-
-      setHasCheckoutBike(false);
-      setCheckoutBikeId(null);
-
-      if (currentTripId) {
-        try {
-          const summary = await getTripSummary(currentTripId);
-          console.log('Trip summary from backend:', JSON.stringify(summary, null, 2));
-          setTripSummary(summary);
-          setShowTripSummary(true);
-          setCurrentTripId(null);
-        } catch (err) {
-          console.error('Failed to fetch trip summary:', err);
-          console.log('Success', 'Bike returned successfully');
-        }
-      } else {
-        console.log('Success', 'Bike returned successfully');
+      const summary = await bikeOps.handleReturnBike(station, bikeId);
+      if (summary) {
+        setTripSummary(summary);
+        setShowTripSummary(true);
       }
       setSelectedStation(null);
-      getStations().catch(() => {});
     } catch (err) {
-      console.error('Return error:', err);
-      console.log('Error', err instanceof Error ? err.message : 'Failed to return bike');
+      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to return bike');
     } finally {
       setIsReturningBike(false);
     }
@@ -236,38 +61,24 @@ export default function MapWeb() {
   const handleMoveBike = (station: StationData, dockIndex: number) => {
     const dock = station.docks?.[dockIndex];
     if (!dock?.bike) {
-      Alert.alert('Error', 'No bike found in Dock 13');
+      Alert.alert('Error', 'No bike found in dock');
       return;
     }
     setMoveBikeSource({ station, bikeId: dock.bike.id });
     setShowDestinationModal(true);
   };
 
-  // Called after user selects destination station
   const handleConfirmMoveBike = async (toStationId: string) => {
-    if (!moveBikeSource || !operatorId) return;
-    console.log('Moving bike:', {
-      operatorId,
-      fromStationId: moveBikeSource.station.id,
-      toStationId,
-      bikeId: moveBikeSource.bikeId
-    });
+    if (!moveBikeSource) return;
     try {
-      const response = await fetch(
-        `http://localhost:8080/api/operator/move-bike?operatorId=${operatorId}&fromStationId=${moveBikeSource.station.id}&toStationId=${toStationId}&bikeId=${moveBikeSource.bikeId}`,
-        { method: 'POST' }
+      await operatorOps.handleMoveBike(
+        moveBikeSource.station.id,
+        toStationId,
+        moveBikeSource.bikeId
       );
-      console.log('Move bike response:', response);
-      if (response.ok) {
-        console.error('Success', 'Bike moved successfully!');
-        await getStations();
-      } else {
-        const errorText = await response.text();
-        console.error('Error', errorText);
-      }
+      Alert.alert('Success', 'Bike moved successfully!');
     } catch (err) {
-      console.error(err);
-      console.error('Error', 'Failed to move bike');
+      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to move bike');
     } finally {
       setShowDestinationModal(false);
       setMoveBikeSource(null);
@@ -279,84 +90,11 @@ export default function MapWeb() {
     const dock = station.docks?.[dockIndex];
     if (!dock) return;
     try {
-      const response = await fetch(
-        `http://localhost:8080/api/operator/toggle-dock?operatorId=${operatorId}&dockId=${dock.id}`,
-        { method: 'POST' }
-      );
-      if (response.ok) {
-        Alert.alert('🔧 Success', `Dock ${dock.name} maintenance toggled`);
-      } else {
-        const errorText = await response.text();
-        Alert.alert('Error', errorText);
-      }
+      await operatorOps.handleToggleDockMaintenance(dock.id);
+      Alert.alert('Success', `Dock ${dock.name} maintenance toggled`);
     } catch (err) {
-      console.error(err);
-      Alert.alert('Error', 'Failed to toggle dock maintenance');
+      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to toggle maintenance');
     }
-  };
-
-  const handleAddBikes = async (
-    station: StationData,
-    counts: { standard: number; eBike: number }
-  ) => {
-    const total = (counts?.standard ?? 0) + (counts?.eBike ?? 0);
-    if (!total) return;
-
-    const baseUrl = 'http://localhost:8080/api/operator/add-bike';
-    const addOne = async (type: 'STANDARD' | 'E_BIKE', idx: number) => {
-      const bikeId = `${station.id}-${type === 'E_BIKE' ? 'EB' : 'SB'}-${Date.now()}-${idx}`;
-      const url =
-        `${baseUrl}?operatorId=${operatorId}` +
-        `&stationId=${encodeURIComponent(station.id)}` +
-        `&bikeId=${encodeURIComponent(bikeId)}` +
-        `&type=${type}`;
-      const res = await fetch(url, { method: 'POST' });
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
-    };
-
-    try {
-      console.log('Adding bikes (sequential):', { stationId: station.id, counts });
-      let added = 0;
-
-      for (let i = 0; i < (counts.standard ?? 0); i++) {
-        try {
-          await addOne('STANDARD', i);
-          added++;
-        } catch (e) {
-          console.error('Add STANDARD failed at', i, e);
-          break;
-        }
-      }
-
-      for (let i = 0; i < (counts.eBike ?? 0); i++) {
-        try {
-          await addOne('E_BIKE', i);
-          added++;
-        } catch (e) {
-          console.error('Add E_BIKE failed at', i, e);
-          break;
-        }
-      }
-
-      await getStations();
-      console.log(`Success: added ${added} bikes`);
-    } catch (e) {
-      console.error('Add bikes failed:', e);
-    }
-  };
-
-  const formatDuration = (minutes?: number) => {
-    if (!minutes) return '0 min';
-    if (minutes < 60) return `${minutes} min`;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}h ${mins}m`;
-  };
-
-  const formatCurrency = (amount?: number) => {
-    if (amount === undefined || amount === null) return '$0.00';
-    return `$${amount.toFixed(2)}`;
   };
 
   return (
@@ -364,10 +102,7 @@ export default function MapWeb() {
       <APIProvider apiKey={'AIzaSyCXEnqnsX-Sl1DevG3W1N8BBg7D2MdZwsU'}>
         <Map
           style={styles.map}
-          defaultCenter={{
-            lat: 45.5017, // Montreal
-            lng: -73.5673
-          }}
+          defaultCenter={{ lat: 45.5017, lng: -73.5673 }}
           defaultZoom={13}
           gestureHandling={'greedy'}
           disableDefaultUI={false}
@@ -378,85 +113,31 @@ export default function MapWeb() {
       </APIProvider>
 
       <StationDetailsPanel
-          visible={selectedStation !== null}
-          station={selectedStation}
-          userRole={userRole}
-          hasReservedBike={hasReservedBike}
-          reservedBikeId={reservedBikeId} // Add this
-          hasCheckoutBike={hasCheckoutBike}
-          checkoutBikeId={checkoutBikeId}
-          loading={isReturningBike}
-          onClose={() => setSelectedStation(null)}
-          onReserveBike={handleReserveBike}
-          onCheckoutBike={handleCheckoutBike}
-          onReturnBike={handleReturnBike}
-          onMoveBike={handleMoveBike}
-          onMaintenanceBike={handleMaintenanceBike}
-          onAddBikes={handleAddBikes}
+        visible={selectedStation !== null}
+        station={selectedStation}
+        userRole={userRole}
+        hasReservedBike={bikeState.hasReservedBike}
+        reservedBikeId={bikeState.reservedBikeId}
+        hasCheckoutBike={bikeState.hasCheckoutBike}
+        checkoutBikeId={bikeState.checkoutBikeId}
+        loading={isReturningBike}
+        onClose={() => setSelectedStation(null)}
+        onReserveBike={bikeOps.handleReserveBike}
+        onCheckoutBike={bikeOps.handleCheckoutBike}
+        onReturnBike={handleReturnBike}
+        onMoveBike={handleMoveBike}
+        onMaintenanceBike={handleMaintenanceBike}
+        onAddBikes={operatorOps.handleAddBikes}
       />
 
-      {/* Trip Summary Modal */}
-      <Modal visible={showTripSummary} animationType="fade" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryTitle}>🚴 Trip Summary</Text>
-            
-            <ScrollView style={styles.summaryContent}>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Trip ID:</Text>
-                <Text style={styles.summaryValue}>#{tripSummary?.tripId}</Text>
-              </View>
-              
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Bike Type:</Text>
-                <Text style={styles.summaryValue}>
-                  {(tripSummary as any)?.bikeType === 'E_BIKE' ? '⚡ E-Bike' : '🚲 Standard'}
-                </Text>
-              </View>
-              
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>From:</Text>
-                <Text style={styles.summaryValue}>
-                  {(tripSummary as any)?.startStationName || 'N/A'}
-                </Text>
-              </View>
-              
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>To:</Text>
-                <Text style={styles.summaryValue}>
-                  {(tripSummary as any)?.endStationName || 'N/A'}
-                </Text>
-              </View>
-              
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Duration:</Text>
-                <Text style={styles.summaryValue}>
-                  {formatDuration(tripSummary?.durationMinutes)}
-                </Text>
-              </View>
-              
-              <View style={styles.summaryDivider} />
-              
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryTotalLabel}>Total Cost:</Text>
-                <Text style={styles.summaryTotalValue}>
-                  {formatCurrency(tripSummary?.cost)}
-                </Text>
-              </View>
-            </ScrollView>
-            
-            <TouchableOpacity 
-              style={styles.summaryButton}
-              onPress={() => {
-                setShowTripSummary(false);
-                setTripSummary(null);
-              }}
-            >
-              <Text style={styles.summaryButtonText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <TripSummaryModal
+        visible={showTripSummary}
+        tripSummary={tripSummary}
+        onClose={() => {
+          setShowTripSummary(false);
+          setTripSummary(null);
+        }}
+      />
 
       {/* Destination Station Modal */}
       <Modal visible={showDestinationModal} animationType="slide" transparent>
@@ -527,69 +208,5 @@ const styles = StyleSheet.create({
   loadingSubtext: {
     fontSize: 16,
     color: '#666',
-  },
-  summaryCard: {
-    backgroundColor: 'white',
-    padding: 24,
-    borderRadius: 16,
-    width: '90%',
-    maxWidth: 400,
-    maxHeight: '80%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  summaryTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-    color: '#333',
-  },
-  summaryContent: {
-    flex: 1,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-  },
-  summaryLabel: {
-    fontSize: 16,
-    color: '#666',
-  },
-  summaryValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  summaryDivider: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-    marginVertical: 12,
-  },
-  summaryTotalLabel: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  summaryTotalValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2196F3',
-  },
-  summaryButton: {
-    backgroundColor: '#2196F3',
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 16,
-    alignItems: 'center',
-  },
-  summaryButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

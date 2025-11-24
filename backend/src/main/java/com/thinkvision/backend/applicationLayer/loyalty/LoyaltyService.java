@@ -1,4 +1,3 @@
-// java
 package com.thinkvision.backend.applicationLayer.loyalty;
 
 import com.thinkvision.backend.entity.*;
@@ -92,10 +91,11 @@ public class LoyaltyService {
 
     private boolean checkSilver(User user, Instant now) {
         Instant oneYearAgo = now.minus(Duration.ofDays(365));
-        List<ReservationStatus> claimedOrReturned = Arrays.asList(ReservationStatus.CLAIMED, ReservationStatus.RETURNED);
-        long claimedCount = reservationRepository.countByRiderAndStatusInAndReservedAtAfter(user, claimedOrReturned, oneYearAgo);
-        boolean sl002 = claimedCount >= 5;
-        System.out.println("checkSilver: claimedCountLastYear=" + claimedCount + " -> sl002=" + sl002);
+
+        // SL-002: count reservations that were actually RETURNED in the last year
+        long returnedCountLastYear = reservationRepository.countByRiderAndStatusAndReturnedAtBetween(user, ReservationStatus.RETURNED, oneYearAgo, now);
+        boolean sl002 = returnedCountLastYear >= 5;
+        System.out.println("checkSilver: returnedCountLastYear=" + returnedCountLastYear + " -> sl002=" + sl002);
 
         boolean sl003 = true;
         ZonedDateTime zNow = ZonedDateTime.ofInstant(now, ZoneId.systemDefault());
@@ -108,6 +108,7 @@ public class LoyaltyService {
             // Use returnedAtBetween for monthly RETURNED counts
             long returnedCount = reservationRepository.countByRiderAndStatusAndReturnedAtBetween(user, ReservationStatus.RETURNED, from, to);
             System.out.println("checkSilver: month=" + ym + " returnedCount=" + returnedCount);
+            // SL-003: "surpassed 5 trips per month" -> require > 5 (i.e. at least 6)
             if (returnedCount <= 5) {
                 sl003 = false;
                 System.out.println("checkSilver: month " + ym + " failed sl003 (returnedCount <= 5)");

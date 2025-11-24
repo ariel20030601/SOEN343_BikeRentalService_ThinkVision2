@@ -117,7 +117,8 @@ public class DemoDataLoader implements CommandLineRunner {
             });
             IntStream.range(0, 4).forEach(i -> {
                 Instant reserved = now.minus(Duration.ofDays(20L * (i + 1)));
-                createClaimedReservation(u, reserved);
+                Instant returned = reserved.plus(Duration.ofHours(1)); // mark as returned
+                createReturnedReservation(u, reserved, returned);
             });
             ZonedDateTime zNow = ZonedDateTime.ofInstant(now, ZoneId.systemDefault());
             for (int m = 0; m < 3; m++) {

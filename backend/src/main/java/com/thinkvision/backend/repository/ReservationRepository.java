@@ -22,6 +22,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, String
     // find all active reservations that have expired
     List<Reservation> findByExpiresAtBeforeAndActiveTrue(Instant now);
     Optional<Reservation> findByBikeIdAndActiveTrue(String bikeId);
+    Optional<Reservation> findByRiderIdAndActiveTrue(Integer riderId);
+    boolean existsByRiderIdAndActiveTrue(Integer riderId);
 
     long countByRiderAndStatusAndReservedAtAfter(User rider, ReservationStatus status, Instant after);
 

@@ -47,6 +47,9 @@ public class StationService {
 
         if (oldStatus != s.getStatus()) {
             eventPublisher.publish("StationStatusChanged", stationId);
+            if (s.getStatus() == StationStatus.EMPTY) {
+                eventPublisher.publish("RebalanceAlert", stationId);
+            }
         }
     }
 }

@@ -1,16 +1,42 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { useFocusEffect } from '@react-navigation/native';
-import React, {useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
 import { router } from 'expo-router';
+import TierNotification from '@/components/Notification';
+import { fetchUserTier } from '@/api/auth/loginAPI';
 
 export default function Index() {
+  const [tierNotification, setTierNotification] = useState(false);
+  const [newTier, setNewTier] = useState('');
 
   const { user } = useAuth();
 
+  const currentTier = user?.currentTier ?? null;
+
+  const updateTier = useCallback(async () => {
+    if (!user) return;         // Guard check
+    if (!user.id) return;      // Ensure ID exists
+    if (!currentTier) return;
+
+    const response = await fetchUserTier(user.id);
+
+    if (response.newTier && response.newTier !== currentTier) {
+      setNewTier(response.newTier);
+      setTierNotification(true);
+    }
+  }, [user, currentTier]);
+
+  useEffect(() => {
+    updateTier();
+  }, [updateTier]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <TierNotification
+        tier={newTier}
+        visible={tierNotification}
+        onHide={() => setTierNotification(false)}
+      />
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.brand}>ThinkVision</Text>
         <Text style={styles.title}>Bike Rental Service</Text>

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Button, StyleSheet, TextInput, View, Text, Alert } from 'react-native';
+import { Button, StyleSheet, TextInput, View, Alert } from 'react-native';
 import { login } from "@/api/auth/loginAPI";
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -47,11 +47,14 @@ export default function LogIn() {
       const response = await login({ username, password });
       
       // Store auth data in context: include server-provided id and username
-      const authUser = { id: String(response.user.id), username: response.user.username };
+      const authUser = { id: String(response.user.id), username: response.user.username, currentTier: response.user.currentTier };
       await authLogin(authUser, response.token);
       
       // Navigate to home page
-      router.replace('/(tabs)');
+      router.replace({
+        pathname: '/(tabs)',
+        params: { loginSuccess: '1' },
+      });
     } catch (error) {
       console.log('Login error:', error);
       Alert.alert('Login Failed', 'Invalid username or password');

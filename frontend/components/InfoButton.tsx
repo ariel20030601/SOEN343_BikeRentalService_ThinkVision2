@@ -3,18 +3,15 @@ import { TouchableOpacity, View, Text, StyleSheet, Modal, Pressable, } from "rea
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
 
-export default function InfoButton() {
+export type MapWebProps = {
+  userRole: 'rider' | 'operator';
+};
+
+export default function InfoButton({userRole}: MapWebProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const { user } = useAuth();
-
-  // 🧪 TESTING: Override user to be operator
-  const testUser = {
-    ...user,
-    role: "operator",
-    username: "test-operator"
-  };
   
   const handlePress = () => {
     setErrorMsg(null);
@@ -24,21 +21,16 @@ export default function InfoButton() {
   const operatorId = 2;
 
   const isOperator =
-    (testUser as any)?.role === "operator" ||  // Change user to testUser
-    (testUser as any)?.role === "OPERATOR" ||
-    (testUser as any)?.isOperator === true;
-  // const isOperator =
-  //   (user as any)?.role === "operator" ||
-  //   (user as any)?.role === "OPERATOR" ||
-  //   (user as any)?.isOperator === true;
+    (user as any)?.role === "operator" ||
+    (user as any)?.role === "OPERATOR" ||
+    (user as any)?.isOperator === true;
 
   const username =
     (user as any)?.username ??
     (user as any)?.name ??
     (user as any)?.email ??
     "Guest";
-  const userRole = isOperator ? "Operator" : "Rider";
-
+    
   const handleReset = async () => {
     setErrorMsg(null);
     setIsResetting(true);

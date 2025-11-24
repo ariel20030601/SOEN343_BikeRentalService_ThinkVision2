@@ -51,7 +51,10 @@ export default function LogIn() {
       await authLogin(authUser, response.token);
       
       // Navigate to home page
-      router.replace('/(tabs)');
+      router.replace({
+        pathname: '/(tabs)',
+        params: { loginSuccess: '1' },
+      });
     } catch (error) {
       console.log('Login error:', error);
       Alert.alert('Login Failed', 'Invalid username or password');

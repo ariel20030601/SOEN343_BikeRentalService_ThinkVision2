@@ -1,16 +1,29 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
-import React, {useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams  } from 'expo-router';
+import Notification from '@/components/Notification';
 
 export default function Index() {
+  const { loginSuccess } = useLocalSearchParams();
+  const [showNotification, setShowNotification] = useState(false);
 
   const { user } = useAuth();
 
+  useEffect(() => {
+    if (loginSuccess === '1') {
+      setShowNotification(true);
+    }
+  }, [loginSuccess]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <Notification 
+        message="Successfully logged in!" 
+        visible={showNotification}
+        onHide={() => setShowNotification(false)}
+      />
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.brand}>ThinkVision</Text>
         <Text style={styles.title}>Bike Rental Service</Text>

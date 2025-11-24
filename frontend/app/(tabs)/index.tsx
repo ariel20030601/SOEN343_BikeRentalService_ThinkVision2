@@ -1,28 +1,41 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { useFocusEffect } from '@react-navigation/native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
-import { router, useLocalSearchParams  } from 'expo-router';
-import Notification from '@/components/Notification';
+import { router } from 'expo-router';
+import TierNotification from '@/components/Notification';
+import { fetchUserTier } from '@/api/auth/loginAPI';
 
 export default function Index() {
-  const { loginSuccess } = useLocalSearchParams();
-  const [showNotification, setShowNotification] = useState(false);
+  const [tierNotification, setTierNotification] = useState(false);
+  const [newTier, setNewTier] = useState('');
 
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (loginSuccess === '1') {
-      setShowNotification(true);
+  const currentTier = user?.currentTier ?? null;
+
+  const updateTier = useCallback(async () => {
+    if (!user) return;         // Guard check
+    if (!user.id) return;      // Ensure ID exists
+    if (!currentTier) return;
+
+    const response = await fetchUserTier(user.id);
+
+    if (response.newTier && response.newTier !== currentTier) {
+      setNewTier(response.newTier);
+      setTierNotification(true);
     }
-  }, [loginSuccess]);
+  }, [user, currentTier]);
+
+  useEffect(() => {
+    updateTier();
+  }, [updateTier]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Notification 
-        message="Successfully logged in!" 
-        visible={showNotification}
-        onHide={() => setShowNotification(false)}
+      <TierNotification
+        tier={newTier}
+        visible={tierNotification}
+        onHide={() => setTierNotification(false)}
       />
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.brand}>ThinkVision</Text>

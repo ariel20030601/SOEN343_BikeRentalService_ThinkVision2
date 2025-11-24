@@ -1,11 +1,13 @@
 package com.thinkvision.backend.applicationLayer.bms;
 
 import com.thinkvision.backend.applicationLayer.dto.EventPublisher;
+import com.thinkvision.backend.applicationLayer.loyalty.LoyaltyService;
 import com.thinkvision.backend.entity.*;
 import com.thinkvision.backend.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -31,13 +33,15 @@ public class ReservationService {
     @Autowired
     private StationService stationService;
 
-    private static final int EXPIRES_AFTER_MINUTES = 5;
+    @Autowired
+    private LoyaltyService loyaltyService;
 
     public Reservation reserveBike(Integer userId, String stationId, String bikeId) {
         User user = userRepo.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("User not found"));
 
-        if (reservationRepo.existsByRiderAndActiveTrue(user)) {
+        // use ID-based existence check to avoid proxy / instance equality issues
+        if (reservationRepo.existsByRiderIdAndActiveTrue(user.getId())) {
             throw new IllegalStateException("User already has an active reservation");
         }
 
@@ -54,9 +58,13 @@ public class ReservationService {
         if (bike.getStatus() != BikeStatus.AVAILABLE)
             throw new IllegalStateException("Bike is not available");
 
+        // Set reservation expiry with loyalty extra hold time
+        int extraHoldSeconds = user.getLoyaltyTier() != null ? user.getLoyaltyTier().getExtraHoldSeconds() : 0;
+        int totalHoldSeconds = 15 + extraHoldSeconds;
+
         // Mark reserved
         bike.setStatus(BikeStatus.RESERVED);
-        bike.setReservationExpiry(Instant.now().plusSeconds(EXPIRES_AFTER_MINUTES * 60));
+        bike.setReservationExpiry(Instant.now().plusSeconds(totalHoldSeconds));
         bikeRepo.save(bike);
 
         // Create reservation
@@ -68,14 +76,17 @@ public class ReservationService {
                 bike.getReservationExpiry(),
                 true
         );
+        // Ensure status is RESERVED
+        res.setStatus(ReservationStatus.RESERVED);
         reservationRepo.save(res);
 
-        eventPublisher.publish("BikeReserved", res.getId());
+        eventPublisher.publish("BikeReserved, reservationId", res.getId());
         return res;
     }
 
     // Scheduled job: run every 60 seconds
     @Scheduled(fixedRate = 60000)
+    @Transactional
     public void expireReservations() {
         Instant now = Instant.now();
 
@@ -88,7 +99,24 @@ public class ReservationService {
             Reservation res = reservationRepo.findByBikeIdAndActiveTrue(bike.getId()).orElse(null);
             if (res != null) {
                 res.setActive(false);
+                res.setStatus(ReservationStatus.MISSED);
                 reservationRepo.save(res);
+
+                // Re-evaluate loyalty tier for the rider because a MISSED occurred
+                try {
+                    if (res.getRider() != null) {
+                        Integer riderId = res.getRider().getId(); // identifier available on proxy
+                        User fullUser = userRepo.findById(riderId).orElse(null);
+                        if (fullUser != null) {
+                            loyaltyService.evaluateAndApplyTier(fullUser);
+                        } else {
+                            loyaltyService.evaluateAndApplyTier(res.getRider());
+                        }
+                    }
+                } catch (Exception ex) {
+                    System.out.println("ReservationService: failed to evaluate/apply tier after expiry: " + ex.getMessage());
+                    ex.printStackTrace(System.out);
+                }
             }
 
             // Free bike + dock
@@ -101,7 +129,7 @@ public class ReservationService {
                 stationService.updateOccupancy(stationId);
             }
 
-            eventPublisher.publish("ReservationExpired", bike.getId());
+            eventPublisher.publish("ReservationExpired, bikeId", bike.getId());
         }
 
         if (!expiredBikes.isEmpty()) {

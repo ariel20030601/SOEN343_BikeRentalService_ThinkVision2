@@ -60,10 +60,13 @@ public class CheckoutService {
             Reservation res = reservationOpt.get();
             if (res.getExpiresAt().isBefore(Instant.now())) {
                 res.setActive(false);
+                res.setStatus(ReservationStatus.MISSED);
                 reservationRepo.save(res);
                 throw new IllegalStateException("Reservation expired");
             }
             res.setActive(false);
+            res.setStatus(ReservationStatus.CLAIMED);
+            res.setClaimedAt(Instant.now());
             reservationRepo.save(res);
         }
 

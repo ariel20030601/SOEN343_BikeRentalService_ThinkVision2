@@ -34,6 +34,16 @@ public class Reservation {
     @Column(name = "active")
     private boolean active;
 
+    @Column(name = "claimed_at")
+    private Instant claimedAt;
+
+    @Column(name = "returned_at")
+    private Instant returnedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private ReservationStatus status = ReservationStatus.RESERVED;
+
     public Reservation() {}
 
     public Reservation(User rider, String bikeId, String stationId,

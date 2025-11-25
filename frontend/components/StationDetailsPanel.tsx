@@ -225,9 +225,9 @@ export default function StationDetailsPanel({
       visible={visible}
       animationType="slide"
       transparent={true}
-      onRequestClose={onClose}
+      onRequestClose={() => {}} // Empty function or remove this line entirely
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
+      <Pressable style={styles.overlay}>
         <Pressable style={styles.panel} onPress={(e) => e.stopPropagation()}>
           {loading && (
             <View style={styles.loadingOverlay}>

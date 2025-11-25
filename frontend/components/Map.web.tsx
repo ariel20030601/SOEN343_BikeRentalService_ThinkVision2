@@ -9,6 +9,7 @@ import { StationData } from '@/types/station';
 import { useBikeState } from '@/hooks/useBikeState';
 import { useBikeOperations } from '@/hooks/useBikeOperations';
 import { useOperatorOperations } from '@/hooks/useOperatorOperations';
+import { useStation } from '@/contexts/StationContext';
 
 export type MapWebProps = {
   userRole: 'rider' | 'operator' | 'visitor';
@@ -16,7 +17,7 @@ export type MapWebProps = {
 
 export default function MapWeb({userRole}: MapWebProps) {
   const [stations, setStations] = useState<StationData[]>([]);
-  const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
+  const { selectedStation, setSelectedStation, setStations: setContextStations } = useStation();
   const [showTripSummary, setShowTripSummary] = useState(false);
   const [tripSummary, setTripSummary] = useState<any>(null);
   const [isReturningBike, setIsReturningBike] = useState(false);
@@ -28,8 +29,9 @@ export default function MapWeb({userRole}: MapWebProps) {
 
   const getStations = async () => {
     try {
-      const stations = await fetchStations(operatorId);
-      setStations(stations);
+      const fetchedStations = await fetchStations(operatorId);
+      setStations(fetchedStations); // local state for map
+      setContextStations(fetchedStations); // context state for InfoButton
     } catch (err) {
       console.error("Failed to fetch stations", err);
     }
@@ -38,6 +40,10 @@ export default function MapWeb({userRole}: MapWebProps) {
   useEffect(() => {
     getStations();
   }, []);
+
+  useEffect(() => {
+    console.log("MapWeb - selectedStation changed:", selectedStation);
+  }, [selectedStation]);
 
   const bikeOps = useBikeOperations(bikeState, getStations);
   const operatorOps = useOperatorOperations(operatorId, getStations);
@@ -121,7 +127,7 @@ export default function MapWeb({userRole}: MapWebProps) {
         hasCheckoutBike={bikeState.hasCheckoutBike}
         checkoutBikeId={bikeState.checkoutBikeId}
         loading={isReturningBike}
-        onClose={() => setSelectedStation(null)}
+        onClose={() => {setSelectedStation(null)}}
         onReserveBike={bikeOps.handleReserveBike}
         onCheckoutBike={bikeOps.handleCheckoutBike}
         onReturnBike={handleReturnBike}

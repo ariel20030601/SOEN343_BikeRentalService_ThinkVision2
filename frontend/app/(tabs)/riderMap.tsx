@@ -23,7 +23,7 @@ export default function Index() {
         </TouchableOpacity>
 
           <TouchableOpacity style={styles.iconButton}>
-            <InfoButton />
+            <InfoButton userRole={'RIDER'} />
           </TouchableOpacity>
 
         {(username && username.toLowerCase().includes('operator')) && (

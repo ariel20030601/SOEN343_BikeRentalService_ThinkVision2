@@ -74,7 +74,7 @@ public class ReservationServiceTest {
         assertThat(saved.getBikeId()).isEqualTo("B1");
         assertThat(saved.getStationId()).isEqualTo(station.getId());
 
-        verify(eventPublisher).publish(eq("BikeReserved"), any());
+        verify(eventPublisher).publish(eq("BikeReserved, reservationId"), any());
     }
 
     @Test
@@ -91,6 +91,6 @@ public class ReservationServiceTest {
 
         verify(reservationRepo, never()).save(any()); // no reservation found
         verify(bikeRepo).save(any(Bike.class));
-        verify(eventPublisher).publish(eq("ReservationExpired"), eq("B2"));
+        verify(eventPublisher).publish(eq("ReservationExpired, bikeId"), eq("B2"));
     }
 }

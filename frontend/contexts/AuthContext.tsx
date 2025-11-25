@@ -13,7 +13,7 @@ export interface AuthContextType {
   token: string | null;
   login: (userData: AuthUser, authToken: string) => Promise<void>;
   logout: () => Promise<void>;
-  updateUserProfile: () => Promise<void>;
+  updateTier: (newTier: string) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -79,38 +79,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const updateUserProfile = async () => {
-    if (!token || !user) {
-      console.warn('Cannot update profile: no token or user');
-      return;
-    }
-
-    console.log('AuthContext - updateUserProfile called');
+  const updateTier = async (newTier: string) => {
+    if (!user) return;
+    
+    const updatedUser = { ...user, loyalty_tier: newTier };
     try {
-      // Fetch updated user data from your API
-      const response = await fetch('YOUR_API_URL/api/user/profile', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch user profile');
-      }
-
-      const updatedUser = await response.json();
-      
-      // Update both state and AsyncStorage
       await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
       setUser(updatedUser);
-      
-      console.log('AuthContext - profile updated successfully', {
-        oldTier: user.loyalty_tier,
-        newTier: updatedUser.loyalty_tier
-      });
+      console.log('AuthContext - tier updated to:', newTier);
     } catch (error) {
-      console.error('Error updating user profile:', error);
+      console.error('Error updating tier:', error);
       throw error;
     }
   };
@@ -125,7 +103,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   console.groupEnd();
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, updateUserProfile, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, updateTier, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

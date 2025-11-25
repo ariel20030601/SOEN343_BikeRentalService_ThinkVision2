@@ -1,19 +1,70 @@
-import { useEffect } from 'react';
-import { notificationClient, LoyaltyPayload } from '@/api/auth/notificationClient';
+import { useState, useCallback } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
-export default function useLoyaltyNotifications(
-  token?: string,
-  userId?: number,
-  onNotification?: (p: LoyaltyPayload) => void
-) {
-  useEffect(() => {
-    if (!token || !userId) return;
+const LYT_API_URL = "http://localhost:8080/api/loyalty";
 
-    const handler = (p: LoyaltyPayload) => {
-      try { onNotification && onNotification(p); } catch (e) { console.error(e); }
-    };
+export function useTierCheck() {
+  const { user, token, updateTier } = useAuth();
+  const [showNotification, setShowNotification] = useState(false);
+  const [newTier, setNewTier] = useState<string | null>(null);
 
-    notificationClient.connect(token, userId, handler);
-    return () => { notificationClient.disconnect(); };
-  }, [token, userId, onNotification]);
+  const checkTier = useCallback(async () => {
+    if (!token || !user) {
+      console.log('Skipping tier check: no token or user');
+      return null;
+    }
+
+    try {
+      const response = await fetch(`${LYT_API_URL}/${user.id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Loyalty tier data fetched:', data);
+      
+      const fetchedTier = data.computedTier;
+      
+      if (!fetchedTier) {
+        console.error('No loyaltyTier field in response:', data);
+        return null;
+      }
+
+      const currentTier = user.loyalty_tier || 'BRONZE';
+
+      // Compare with current tier (case-insensitive)
+      if (fetchedTier.toUpperCase() !== currentTier.toUpperCase()) {
+        console.log(`🎉 Tier upgraded: ${currentTier} → ${fetchedTier}`);
+        setNewTier(fetchedTier);
+        setShowNotification(true);
+        await updateTier(fetchedTier);
+        return fetchedTier;
+      } else {
+        console.log(`Tier unchanged: ${currentTier}`);
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Failed to check tier:', error);
+      return null;
+    }
+  }, [token, user, updateTier]);
+
+  const hideNotification = useCallback(() => {
+    setShowNotification(false);
+    setNewTier(null);
+  }, []);
+
+  return {
+    showNotification,
+    newTier: newTier || user?.loyalty_tier || 'NONE',
+    checkTier,
+    hideNotification,
+  };
 }

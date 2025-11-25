@@ -4,12 +4,14 @@ import { APIProvider, Map } from '@vis.gl/react-google-maps';
 import Markers from './Markers.web';
 import StationDetailsPanel from '@/components/StationDetailsPanel';
 import TripSummaryModal from '@/components/TripSummaryModal';
+import TierNotification from '../components/TierNotification'; // Add this
 import { fetchStations } from '@/api/auth/dashboardAPI';
 import { StationData } from '@/types/station';
 import { useBikeState } from '@/hooks/useBikeState';
 import { useBikeOperations } from '@/hooks/useBikeOperations';
 import { useOperatorOperations } from '@/hooks/useOperatorOperations';
 import { useStation } from '@/contexts/StationContext';
+import { useTierCheck } from '@/hooks/useLoyaltyNotifications';
 
 export type MapWebProps = {
   userRole: 'rider' | 'operator' | 'visitor';
@@ -26,6 +28,8 @@ export default function MapWeb({userRole}: MapWebProps) {
   
   const operatorId = 2;
   const bikeState = useBikeState();
+
+  const { showNotification, newTier, checkTier, hideNotification } = useTierCheck();
 
   const getStations = async () => {
     try {
@@ -55,6 +59,7 @@ export default function MapWeb({userRole}: MapWebProps) {
       if (summary) {
         setTripSummary(summary);
         setShowTripSummary(true);
+        await checkTier();
       }
       setSelectedStation(null);
     } catch (err) {
@@ -117,6 +122,12 @@ export default function MapWeb({userRole}: MapWebProps) {
           <Markers stations={stations} onMarkerPress={setSelectedStation} />
         </Map>
       </APIProvider>
+
+      <TierNotification
+        tier={newTier}
+        visible={showNotification}
+        onHide={hideNotification}
+      />
 
       <StationDetailsPanel
         visible={selectedStation !== null}

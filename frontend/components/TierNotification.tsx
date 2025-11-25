@@ -14,7 +14,7 @@ export default function TierNotification({ tier, visible, onHide }: Notification
       // Trigger enter animation
       setIsAnimating(true);
 
-      // Auto-hide after 2.5 seconds
+      // Auto-hide after 5 seconds
       const timeout = setTimeout(() => {
         setIsAnimating(false);
         
@@ -22,11 +22,26 @@ export default function TierNotification({ tier, visible, onHide }: Notification
         setTimeout(() => {
           onHide?.();
         }, 300);
-      }, 2500);
+      }, 5000);
 
       return () => clearTimeout(timeout);
     }
   }, [visible, onHide]);
+
+  // Get tier color based on tier name
+  const getTierColor = (tierName: string): string => {
+    const normalizedTier = tierName.toUpperCase();
+    switch (normalizedTier) {
+      case 'BRONZE':
+        return '#CD7F32'; // Bronze color
+      case 'SILVER':
+        return '#C0C0C0'; // Silver color
+      case 'GOLD':
+        return '#FFD700'; // Gold color
+      default:
+        return '#2196F3'; // Default blue
+    }
+  };
 
   if (!visible) return null;
 
@@ -35,13 +50,21 @@ export default function TierNotification({ tier, visible, onHide }: Notification
       className={`tier-notification ${isAnimating ? 'tier-notification-enter' : 'tier-notification-exit'}`}
       style={styles.container}
     >
-      <div style={styles.text}>🎉 Loyalty Tier Upgraded!</div>
-      <div style={styles.tierText}>You are now {tier} Tier 🎖️</div>
+      <div style={styles.title}>🎉 Loyalty Tier Upgraded!</div>
+      
+      <div style={styles.divider} />
+      
+      <div style={styles.tierRow}>
+        <span style={styles.label}>New Tier:</span>
+        <span style={{...styles.tierValue, color: getTierColor(tier)}}>
+          {tier} 🏆
+        </span>
+      </div>
 
       <style>{`
         .tier-notification {
           position: fixed;
-          top: 50px;
+          top: 120px;
           left: 50%;
           transform: translate(-50%, -30px);
           opacity: 0;
@@ -65,25 +88,43 @@ export default function TierNotification({ tier, visible, onHide }: Notification
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
-    backgroundColor: '#111',
+    backgroundColor: 'white',
+    padding: 24,
+    borderRadius: 16,
+    minWidth: 320,
+    maxWidth: 400,
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#333',
+    marginBottom: 20,
+    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+    marginBottom: 12,
+  },
+  tierRow: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingTop: 12,
     paddingBottom: 12,
-    paddingLeft: 20,
-    paddingRight: 20,
-    borderRadius: 14,
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
   },
-  text: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
-    textAlign: 'center',
+  label: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   },
-  tierText: {
-    color: '#FFC107',
-    fontSize: 17,
-    fontWeight: '700',
-    marginTop: 4,
-    textAlign: 'center',
-  }
+  tierValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  },
 };

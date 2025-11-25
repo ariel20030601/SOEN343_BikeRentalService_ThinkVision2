@@ -144,7 +144,7 @@ public class DemoDataLoader implements CommandLineRunner {
                 ZonedDateTime reference = zNow.minusWeeks(week);
                 LocalDate weekStartDate = reference.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).toLocalDate();
                 Instant weekStart = weekStartDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-                int count = (week == 5) ? 5 : 6;
+                int count = 6; // 6 trips every week
                 for (int i = 0; i < count; i++) {
                     Instant reserved = weekStart.plus(Duration.ofDays(i));
                     createReturnedReservation(u, reserved, reserved.plus(Duration.ofHours(1)));

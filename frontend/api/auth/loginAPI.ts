@@ -21,8 +21,8 @@ export interface User {
     id: number;
     username: string;
     email: string;
-    newTier: string;
-    currentTier: string;
+    role: string;
+    loyaltyTier: string;
 }
 
 export interface AuthResponse {

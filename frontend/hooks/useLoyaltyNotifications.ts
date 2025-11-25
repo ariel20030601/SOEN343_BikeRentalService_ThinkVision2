@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { notificationClient, LoyaltyPayload } from 'api/notificationClient';
+import { notificationClient, LoyaltyPayload } from '@/api/auth/notificationClient';
 
 export default function useLoyaltyNotifications(
   token?: string,

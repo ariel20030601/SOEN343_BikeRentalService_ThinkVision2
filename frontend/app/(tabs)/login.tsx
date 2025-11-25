@@ -45,9 +45,10 @@ export default function LogIn() {
     setIsLoading(true);
     try {
       const response = await login({ username, password });
-      
+      console.log("🔍 Raw API response:", response);
+
       // Store auth data in context: include server-provided id and username
-      const authUser = { id: String(response.user.id), username: response.user.username, currentTier: response.user.currentTier };
+      const authUser = { id: String(response.user.id), username: response.user.username, role: response.user.role, loyalty_tier: response.user.loyaltyTier };
       await authLogin(authUser, response.token);
       
       // Navigate to home page

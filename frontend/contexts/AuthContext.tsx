@@ -5,8 +5,7 @@ export interface AuthUser {
   id: string;
   username: string;
   role: string;
-  currentTier: string;
-  // add other fields as needed
+  loyalty_tier: string;
 }
 
 export interface AuthContextType {
@@ -14,6 +13,7 @@ export interface AuthContextType {
   token: string | null;
   login: (userData: AuthUser, authToken: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateUserProfile: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -79,10 +79,53 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  console.log('AuthContext - Current user:', user);
+  const updateUserProfile = async () => {
+    if (!token || !user) {
+      console.warn('Cannot update profile: no token or user');
+      return;
+    }
+
+    console.log('AuthContext - updateUserProfile called');
+    try {
+      // Fetch updated user data from your API
+      const response = await fetch('YOUR_API_URL/api/user/profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user profile');
+      }
+
+      const updatedUser = await response.json();
+      
+      // Update both state and AsyncStorage
+      await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      
+      console.log('AuthContext - profile updated successfully', {
+        oldTier: user.loyalty_tier,
+        newTier: updatedUser.loyalty_tier
+      });
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      throw error;
+    }
+  };
+
+  console.group("🔐 Auth Context State");
+  console.log("User:", user);
+  console.log("User ID:", user?.id);
+  console.log("Username:", user?.username);
+  console.log("Role:", user?.role);
+  console.log("Loyalty Tier:", user?.loyalty_tier ?? "None");
+  console.log("Token:", token ? "[SET]" : "[EMPTY]");
+  console.groupEnd();
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, updateUserProfile, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

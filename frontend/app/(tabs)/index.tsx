@@ -11,7 +11,7 @@ export default function Index() {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.brand}>ThinkVision</Text>
-        <Text style={styles.title}>Bike Rental Service</Text>
+        <Text style={styles.title}>BiBiXi - Bike Rental Service</Text>
 
         <Text style={styles.lead}>
           Find, reserve, and ride shared bikes across the city. Fast unlock, secure

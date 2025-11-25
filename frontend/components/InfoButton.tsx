@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { TouchableOpacity, View, Text, StyleSheet, Modal, Pressable, } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStation, Station } from "@/contexts/StationContext";
 
 export type MapWebProps = {
-  userRole: 'rider' | 'operator';
+  userRole: 'RIDER' | 'OPERATOR';
 };
 
 export default function InfoButton({userRole}: MapWebProps) {
@@ -12,18 +13,25 @@ export default function InfoButton({userRole}: MapWebProps) {
   const [isResetting, setIsResetting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const { user } = useAuth();
+  const { selectedStation } = useStation();
+  const [displayStation, setDisplayStation] = useState<Station | null>(null);
+
   
   const handlePress = () => {
     setErrorMsg(null);
     setIsVisible(true);
   };
 
-  const operatorId = 2;
+  useEffect(() => {
+    console.log("InfoButton - selectedStation:", selectedStation);
+    // Only update display when we have a valid station
+    if (selectedStation) {
+      setDisplayStation(selectedStation);
+    }
+    // Don't clear displayStation when selectedStation becomes null
+  }, [selectedStation]);
 
-  const isOperator =
-    (user as any)?.role === "operator" ||
-    (user as any)?.role === "OPERATOR" ||
-    (user as any)?.isOperator === true;
+  const operatorId = 2;
 
   const username =
     (user as any)?.username ??
@@ -60,12 +68,10 @@ export default function InfoButton({userRole}: MapWebProps) {
     }
   };
 
-
-  // TODO: Get station data from StationContext
-  const stationName = "Station A"; // Placeholder
-  const bikes = 5; // Placeholder
-  const capacity = 10; // Placeholder
-  const freeDocks = capacity - bikes;
+  const stationName = displayStation?.name ?? "No station selected";
+  const bikes = displayStation?.availableBikes ?? 0;
+  const capacity = displayStation?.capacity ?? 0;
+  const freeDocks = displayStation?.freeDocks ?? 0;
 
   return (
     <>
@@ -116,7 +122,7 @@ export default function InfoButton({userRole}: MapWebProps) {
               )}
             </View>
 
-            {isOperator && (
+            {userRole === 'OPERATOR' && (
               <View style={styles.actions}>
                 <TouchableOpacity 
                   style={[styles.button, styles.resetButton, isResetting && styles.buttonDisabled]} 

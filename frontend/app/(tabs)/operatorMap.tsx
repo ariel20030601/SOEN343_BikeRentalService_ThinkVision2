@@ -23,7 +23,7 @@ export default function Index() {
         </TouchableOpacity>
 
           <TouchableOpacity style={styles.iconButton}>
-            <InfoButton />
+            <InfoButton userRole={'OPERATOR'} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.switchButton} onPress={() => router.push('/(tabs)/riderMap')}>

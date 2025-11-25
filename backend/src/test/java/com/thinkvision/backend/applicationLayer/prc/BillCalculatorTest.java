@@ -68,7 +68,7 @@ public class BillCalculatorTest {
         trip.setId(101L);
         trip.setRider(user);
         trip.setBikeId("E-BIKE-1");
-        trip.setStartTime(Instant.now().minusSeconds(60 * 20)); // 20 minutes -> base fare
+        trip.setStartTime(Instant.now().minusSeconds(60 * 20)); // 20 minutes < 30 minutes -> base fare
         trip.setEndTime(Instant.now());
 
         Bike bike = new Bike(); bike.setId("E-BIKE-1"); bike.setType(BikeType.E_BIKE);
@@ -81,5 +81,51 @@ public class BillCalculatorTest {
         verify(tripReceiptRepo).save(receiptCaptor.capture());
         TripReceipt saved = receiptCaptor.getValue();
         assertThat(saved.getFare()).isEqualTo(15.0);
+    }
+
+    @Test
+    public void computeCost_standardBike_longerDuration() {
+        User user = new User(); user.setId(6);
+        Trip trip = new Trip();
+        trip.setId(102L);
+        trip.setRider(user);
+        trip.setBikeId("S-BIKE-2");
+        trip.setStartTime(Instant.now().minusSeconds(60 * 120)); // 2 Hours
+        trip.setEndTime(Instant.now());
+
+        Bike bike = new Bike(); bike.setId("S-BIKE-2"); bike.setType(BikeType.STANDARD);
+
+        when(tripRepo.findById(102L)).thenReturn(Optional.of(trip));
+        when(bikeRepo.findById("S-BIKE-2")).thenReturn(Optional.of(bike));
+
+        billCalculator.computeCost(new TripEndedEvent(102L));
+
+        verify(tripReceiptRepo).save(receiptCaptor.capture());
+        TripReceipt saved = receiptCaptor.getValue();
+        // Standard plan: 2 Hours -> 120 minutes => base 10.0 + 90 * 0.25 = 32.5
+        assertThat(saved.getFare()).isEqualTo(32.5);
+    }
+
+    @Test
+    public void computeCost_ebike_longerDuration() {
+        User user = new User(); user.setId(6);
+        Trip trip = new Trip();
+        trip.setId(101L);
+        trip.setRider(user);
+        trip.setBikeId("E-BIKE-2");
+        trip.setStartTime(Instant.now().minusSeconds(60 * 120)); // 2 Hours
+        trip.setEndTime(Instant.now());
+
+        Bike bike = new Bike(); bike.setId("E-BIKE-2"); bike.setType(BikeType.E_BIKE);
+
+        when(tripRepo.findById(101L)).thenReturn(Optional.of(trip));
+        when(bikeRepo.findById("E-BIKE-2")).thenReturn(Optional.of(bike));
+
+        billCalculator.computeCost(new TripEndedEvent(101L));
+
+        verify(tripReceiptRepo).save(receiptCaptor.capture());
+        TripReceipt saved = receiptCaptor.getValue();
+        // E-bike plan: 2 Hours -> 120 minutes => base 15.0 + 0.5 * 90 = 60
+        assertThat(saved.getFare()).isEqualTo(60.0);
     }
 }

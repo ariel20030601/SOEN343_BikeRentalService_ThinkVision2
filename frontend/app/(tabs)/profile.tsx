@@ -126,7 +126,7 @@ export default function ProfileScreen() {
       </View>
 
       <Text style={styles.label}>Flex Dollars</Text>
-      <Text style={styles.value}>${flexDollars ?? 0}</Text>
+      <Text style={styles.value}>${flexDollars || 0}</Text>
       
 
       {/* Sign Out */}

@@ -1,7 +1,7 @@
 import { Client, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
-const WS_URL = 'http://localhost:8080/ws'; // backend endpoint from `WebSocketConfig`
+const WS_URL = 'http://localhost:8081/ws'; // backend endpoint from `WebSocketConfig`
 
 export type LoyaltyPayload = {
   userId: number | string;

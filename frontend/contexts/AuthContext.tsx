@@ -6,6 +6,7 @@ export interface AuthUser {
   username: string;
   role: string;
   loyalty_tier: string;
+  flex_balance: number;
 }
 
 export interface AuthContextType {

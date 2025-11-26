@@ -4,9 +4,10 @@ interface NotificationProps {
   tier: string;
   visible: boolean;
   onHide?: () => void;
+  isUpgrade?: boolean; // New prop to determine if it's an upgrade or downgrade
 }
 
-export default function TierNotification({ tier, visible, onHide }: NotificationProps) {
+export default function TierNotification({ tier, visible, onHide, isUpgrade = true }: NotificationProps) {
   const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
@@ -50,14 +51,18 @@ export default function TierNotification({ tier, visible, onHide }: Notification
       className={`tier-notification ${isAnimating ? 'tier-notification-enter' : 'tier-notification-exit'}`}
       style={styles.container}
     >
-      <div style={styles.title}>🎉 Loyalty Tier Upgraded!</div>
+      <div style={styles.title}>
+        {isUpgrade ? '🎉 Loyalty Tier Upgraded!' : '⚠️ Loyalty Tier Downgraded'}
+      </div>
       
       <div style={styles.divider} />
       
       <div style={styles.tierRow}>
-        <span style={styles.label}>New Tier:</span>
+        <span style={styles.label}>
+          {isUpgrade ? 'New Tier:' : 'Current Tier:'}
+        </span>
         <span style={{...styles.tierValue, color: getTierColor(tier)}}>
-          {tier} 🏆
+          {tier} {isUpgrade ? '🏆' : '📉'}
         </span>
       </div>
 

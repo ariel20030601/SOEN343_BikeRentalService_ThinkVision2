@@ -4,7 +4,7 @@ import TierNotification from '../components/TierNotification';
 type LoyaltyNotification = {
   from: string;
   to: string;
-  visual?: boolean;
+  visual?: "upgrade" | "downgrade" | undefined;
 };
 
 type LoyaltyNotificationContextType = {

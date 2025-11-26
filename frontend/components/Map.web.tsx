@@ -29,7 +29,7 @@ export default function MapWeb({userRole}: MapWebProps) {
   const operatorId = 2;
   const bikeState = useBikeState();
 
-  const { showNotification, newTier, checkTier, hideNotification } = useTierCheck();
+  const { showNotification, newTier, isUpgrade, checkTier, hideNotification } = useTierCheck();
 
   const getStations = async () => {
     try {
@@ -126,6 +126,7 @@ export default function MapWeb({userRole}: MapWebProps) {
       <TierNotification
         tier={newTier}
         visible={showNotification}
+        isUpgrade={isUpgrade}
         onHide={hideNotification}
       />
 

@@ -1,36 +1,42 @@
-import React, { useState } from 'react';
-import useLoyaltyNotifications from 'hooks/useLoyaltyNotifications';
+import React, { useState, useEffect } from 'react';
+import { useTierCheck } from '@/hooks/useLoyaltyNotifications';
 import { useLoyaltyNotification } from '@/contexts/LoyaltyNotificationContext';
 
-export default function NotificationListener({ token, userId }: { token?: string; userId?: number }) {
+export default function NotificationListener() {
   const [last, setLast] = useState<{ from: string; to: string } | null>(null);
 
   const { notifyTierChange } = useLoyaltyNotification();
 
-  useLoyaltyNotifications(token, userId, (p) => {
-    const from = String(p.from);
-    const to = String(p.to);
+  // Pull values directly from the hook instead of passing token/userId here
+  const {
+    checkTier
+  } = useTierCheck();
 
-    console.log("[Loyalty Event Received]", {
-      userId,
-      from,
-      to,
-      visual: p.visual,
+  // Run the tier check once (or put inside useFocusEffect / interval)
+  useEffect(() => {
+    checkTier().then((updatedTier) => {
+      if (!updatedTier) return;
+
+      const from = last?.to ?? "UNKNOWN";
+      const to = updatedTier;
+
+      setLast({ from, to });
+
+      const payload = {
+        from,
+        to,
+      };
+
+      console.log("[Loyalty Event Received]", payload);
+      notifyTierChange(payload);
     });
-
-    setLast({ from, to });
-
-    console.log("[Raw payload]", p);  // <-- Check the actual payload
-    console.log("[Visual flag]", p.visual, typeof p.visual);  // <-- Check type
-    notifyTierChange(p);
-  });
-
-
-  if (!token || !userId) return null;
+  }, []); // run once
 
   return (
     <div>
-      {last ? `Last change: ${last.from} → ${last.to}` : 'Listening for loyalty notifications...'}
+      {last
+        ? `Last change: ${last.from} → ${last.to}`
+        : 'Listening for loyalty notifications...'}
     </div>
   );
 }

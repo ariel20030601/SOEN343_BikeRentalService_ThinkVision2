@@ -90,4 +90,12 @@ public class FlexDollarService {
             eventPublisher.publish("FlexDollar.None", msg);
         }
     }
+
+    public double getUserFlexBalance(Integer userId) {
+        Optional<User> userOpt = userRepo.findById(userId);
+        if (userOpt.isEmpty()) return 0.0;
+        User user = userOpt.get();
+        Double balance = user.getFlexBalance();
+        return balance != null ? balance : 0.0;
+    }
 }

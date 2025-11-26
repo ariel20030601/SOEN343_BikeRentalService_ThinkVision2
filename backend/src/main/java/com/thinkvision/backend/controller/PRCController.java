@@ -1,5 +1,6 @@
 package com.thinkvision.backend.controller;
 
+import com.thinkvision.backend.applicationLayer.balancingPrice.FlexDollarService;
 import com.thinkvision.backend.applicationLayer.dto.TripSummaryDTO;
 import com.thinkvision.backend.applicationLayer.prc.BillingHistoryService;
 import com.thinkvision.backend.applicationLayer.prc.PricingPlan;
@@ -21,6 +22,8 @@ public class PRCController {
     @Autowired
     private SummaryService summaryService;
     @Autowired
+    FlexDollarService flexDollarService;
+    @Autowired
     private BillingHistoryService billingHistoryService;
 
     @GetMapping ("/getPricingPlans")
@@ -38,5 +41,10 @@ public class PRCController {
     @GetMapping("/history/{userId}")
     public List<TripSummaryDTO> getHistory(@PathVariable Integer userId) {
         return billingHistoryService.getBillingHistoryForUser(userId);
+    }
+
+    @GetMapping("/flexDollars/{userId}")
+    public Double getFlexDollars(@PathVariable Integer userId) {
+        return flexDollarService.getUserFlexBalance(userId);
     }
 }

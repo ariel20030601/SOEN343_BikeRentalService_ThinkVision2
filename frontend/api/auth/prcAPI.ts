@@ -88,3 +88,14 @@ export async function getTripSummary(tripId: number): Promise<TripSummaryDTO> {
     }
     return res.json();
 }
+
+export async function getUserFlexBalance(userId: number): Promise<number> {
+    const url = `${PRC_API_URL}/flexDollars/${userId}`;
+    const res = await fetch(url, { method: "GET" });
+    if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(text || `Failed to load user flex balance (${res.status})`);
+    }
+    const body = await res.json().catch(() => ({ balance: 0 }));
+    return Number(body?.balance) || 0;
+}

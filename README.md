@@ -16,7 +16,7 @@ Full-stack bike rental prototype built for SOEN343. Provides a mobile-first fron
 ## Tech Stack / Requirements
 - Frontend
   - Expo (React Native) + Expo Router, TypeScript
-  - Node.js (recommended LTS)
+  - Node.js
   - npm or yarn
 - Backend
   - Java 21
